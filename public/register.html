@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer un compte — SOUQDZ.COM</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="main">
+  <div class="header-row wrap">
+    <a href="/" class="logo">SOUQ<span>DZ</span>.COM</a>
+  </div>
+</header>
+
+<div class="form-page">
+  <div class="form-card">
+    <h1>Créer un compte</h1>
+    <p class="sub">Rejoignez SOUQDZ pour suivre vos commandes facilement.</p>
+    <div class="form-error" id="err"></div>
+    <form id="registerForm">
+      <div class="field">
+        <label for="name">Nom complet</label>
+        <input type="text" id="name" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="email">Adresse email</label>
+        <input type="email" id="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+    </form>
+    <p class="switch-link">Déjà inscrit ? <a href="/login.html">Se connecter</a></p>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  document.getElementById('registerForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const err = document.getElementById('err');
+    err.classList.remove('show');
+    try{
+      await api('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+        })
+      });
+      location.href = '/account.html';
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+    }
+  });
+</script>
+</body>
+</html>

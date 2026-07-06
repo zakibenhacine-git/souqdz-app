@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produit — SOUQDZ.COM</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="main">
+  <div class="header-row wrap">
+    <a href="/" class="logo">SOUQ<span>DZ</span>.COM</a>
+    <div class="header-actions" style="margin-left:auto;">
+      <a href="/login.html" class="action" id="accountLink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="action-label">Compte</span>
+      </a>
+      <button class="action" onclick="toggleCart(true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+        Panier
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="product-detail wrap" id="content">
+  <p class="breadcrumb"><a href="/">Accueil</a> / Chargement…</p>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-bottom">
+      <span>© 2026 SOUQDZ.COM — Tous droits réservés.</span>
+      <div class="payments"><span>CIB</span><span>EDAHABIA</span><span>COD</span></div>
+    </div>
+  </div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Panier">
+  <div class="drawer-head">
+    <h3>Mon panier</h3>
+    <button class="close-btn" onclick="toggleCart(false)" aria-label="Fermer le panier">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <div class="total-row"><span>Total</span><span class="mono" id="cartTotal">0 DA</span></div>
+    <a href="/checkout.html" class="btn btn-primary btn-block">Passer la commande</a>
+  </div>
+</aside>
+
+<script src="/js/common.js"></script>
+<script>
+  const id = new URLSearchParams(location.search).get('id');
+  let qty = 1;
+  let currentProduct = null;
+
+  async function load(){
+    const content = document.getElementById('content');
+    if(!id){ content.innerHTML = '<p class="empty-msg">Produit introuvable.</p>'; return; }
+    try{
+      const { product } = await api('/products/' + id);
+      currentProduct = product;
+      document.title = product.title + ' — SOUQDZ.COM';
+      const oldHTML = product.old_price ? `<span class="price old mono">${fmt(product.old_price)}</span>` : '';
+      content.innerHTML = `
+        <p class="breadcrumb"><a href="/">Accueil</a> / ${product.category} / ${product.title}</p>
+        <div class="pd-grid">
+          <div class="arch-frame">
+            <img src="${imageUrl(product.image_seed, 700, 700)}" alt="${product.title}">
+          </div>
+          <div>
+            <span class="pd-brand">${product.brand}</span>
+            <h1 class="pd-title">${product.title}</h1>
+            <div class="pd-price">
+              <span class="price mono">${fmt(product.price)}</span>
+              ${oldHTML}
+            </div>
+            <p class="pd-desc">${product.description || ''}</p>
+            <div class="qty-select">
+              <span style="font-size:13px; font-weight:600;">Quantité</span>
+              <div class="qty-ctrl">
+                <button onclick="changeQty(-1)" aria-label="Diminuer">−</button>
+                <span id="qtyVal">1</span>
+                <button onclick="changeQty(1)" aria-label="Augmenter">+</button>
+              </div>
+              <span style="font-size:12.5px; color:var(--ink-soft);">${product.stock} en stock</span>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="addCurrent(this)">Ajouter au panier</button>
+          </div>
+        </div>`;
+    }catch(e){
+      content.innerHTML = "<p class=\"empty-msg\">Ce produit n'est plus disponible.</p>";
+    }
+  }
+
+  function changeQty(delta){
+    qty = Math.max(1, qty + delta);
+    document.getElementById('qtyVal').textContent = qty;
+  }
+
+  function addCurrent(btn){
+    if(!currentProduct) return;
+    Cart.add(currentProduct, qty);
+    showToast(`${currentProduct.title} ajouté au panier (x${qty})`);
+    btn.textContent = 'Ajouté ✓';
+    setTimeout(()=> btn.textContent = 'Ajouter au panier', 1400);
+  }
+
+  load();
+</script>
+</body>
+</html>

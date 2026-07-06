@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finaliser la commande — SOUQDZ.COM</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .checkout-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:start;}
+  .summary{background:var(--cream); border:1px solid var(--line); border-radius:16px; padding:24px;}
+  .summary .line{display:flex; justify-content:space-between; font-size:14px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .summary .line img{width:40px; height:40px; object-fit:cover; border-radius:6px; margin-right:8px; vertical-align:middle;}
+  .summary .total{display:flex; justify-content:space-between; font-size:17px; font-weight:700; padding-top:14px; color:var(--rust);}
+  @media (max-width:900px){ .checkout-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<header class="main">
+  <div class="header-row wrap">
+    <a href="/" class="logo">SOUQ<span>DZ</span>.COM</a>
+  </div>
+</header>
+
+<div class="wrap" style="padding:48px 24px;">
+  <h1 style="margin-bottom:6px;">Finaliser la commande</h1>
+  <p style="color:var(--ink-soft); margin-bottom:32px;">Paiement en espèces à la livraison, partout en Algérie.</p>
+
+  <div class="checkout-grid">
+    <div class="form-card" style="padding:0;">
+      <div class="form-error" id="err"></div>
+      <form id="checkoutForm">
+        <div class="field">
+          <label for="customer_name">Nom et prénom</label>
+          <input type="text" id="customer_name" required>
+        </div>
+        <div class="field">
+          <label for="phone">Téléphone</label>
+          <input type="tel" id="phone" required placeholder="05 xx xx xx xx">
+        </div>
+        <div class="field">
+          <label for="wilaya">Wilaya</label>
+          <select id="wilaya" required>
+            <option value="">Sélectionnez votre wilaya</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="address">Adresse complète</label>
+          <textarea id="address" required placeholder="Rue, quartier, ville…"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Confirmer la commande (paiement à la livraison)</button>
+      </form>
+    </div>
+
+    <div class="summary" id="summary">
+      <p style="color:var(--ink-soft);">Chargement du panier…</p>
+    </div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  const WILAYAS = ['Adrar','Chlef','Laghouat','Oum El Bouaghi','Batna','Béjaïa','Biskra','Béchar','Blida','Bouira',
+    'Tamanrasset','Tébessa','Tlemcen','Tiaret','Tizi Ouzou','Alger','Djelfa','Jijel','Sétif','Saïda',
+    'Skikda','Sidi Bel Abbès','Annaba','Guelma','Constantine','Médéa','Mostaganem','MSila','Mascara','Ouargla',
+    'Oran','El Bayadh','Illizi','Bordj Bou Arreridj','Boumerdès','El Tarf','Tindouf','Tissemsilt','El Oued','Khenchela',
+    'Souk Ahras','Tipaza','Mila','Aïn Defla','Naâma','Aïn Témouchent','Ghardaïa','Relizane'];
+  const sel = document.getElementById('wilaya');
+  WILAYAS.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
+
+  function renderSummary(){
+    const items = Cart.get();
+    const summary = document.getElementById('summary');
+    if(items.length === 0){
+      summary.innerHTML = '<p style="color:var(--ink-soft);">Votre panier est vide. <a href="/" style="color:var(--rust); font-weight:600;">Retour à la boutique</a></p>';
+      document.getElementById('submitBtn').disabled = true;
+      return;
+    }
+    summary.innerHTML = items.map(i => `
+      <div class="line">
+        <span><img src="${imageUrl(i.image_seed, 80, 80)}" alt="">${i.qty} × ${i.title}</span>
+        <span class="mono">${fmt(i.price * i.qty)}</span>
+      </div>`).join('') + `<div class="total"><span>Total</span><span class="mono">${fmt(Cart.total())}</span></div>`;
+  }
+  renderSummary();
+
+  document.getElementById('checkoutForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const err = document.getElementById('err');
+    err.classList.remove('show');
+    const items = Cart.get().map(i => ({ id: i.id, qty: i.qty }));
+    if(items.length === 0) return;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours…';
+    try{
+      const { order } = await api('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          items,
+          customer_name: document.getElementById('customer_name').value,
+          phone: document.getElementById('phone').value,
+          wilaya: document.getElementById('wilaya').value,
+          address: document.getElementById('address').value,
+        })
+      });
+      Cart.clear();
+      document.querySelector('.checkout-grid').innerHTML = `
+        <div class="form-success show" style="grid-column:1/-1;">
+          ✅ Commande #${order.id} confirmée ! Total : ${fmt(order.total)}, paiement à la livraison.
+          Vous recevrez un appel de confirmation. <a href="/" style="color:#276A38; font-weight:700;">Retour à la boutique</a>
+        </div>`;
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Confirmer la commande (paiement à la livraison)';
+    }
+  });
+</script>
+</body>
+</html>

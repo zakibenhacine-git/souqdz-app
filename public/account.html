@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon compte — SOUQDZ.COM</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="main">
+  <div class="header-row wrap">
+    <a href="/" class="logo">SOUQ<span>DZ</span>.COM</a>
+    <div class="header-actions" style="margin-left:auto;">
+      <button class="action" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" style="padding:48px 24px; max-width:760px;">
+  <h1 id="greeting" style="margin-bottom:6px;">Mon compte</h1>
+  <p style="color:var(--ink-soft); margin-bottom:32px;" id="emailLine"></p>
+
+  <h2 style="font-size:20px; margin-bottom:18px;">Mes commandes</h2>
+  <div id="orders"><p style="color:var(--ink-soft);">Chargement…</p></div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  const STATUS_LABELS = {
+    en_attente: 'En attente', confirmee: 'Confirmée', expediee: 'Expédiée',
+    livree: 'Livrée', annulee: 'Annulée'
+  };
+
+  async function logout(){
+    await api('/auth/logout', { method: 'POST' });
+    location.href = '/';
+  }
+
+  async function load(){
+    try{
+      const { user } = await api('/auth/me');
+      if(!user){ location.href = '/login.html'; return; }
+      document.getElementById('greeting').textContent = 'Bonjour, ' + user.name;
+      document.getElementById('emailLine').textContent = user.email;
+
+      const { orders } = await api('/orders/mine');
+      const container = document.getElementById('orders');
+      if(orders.length === 0){
+        container.innerHTML = "<p style=\"color:var(--ink-soft);\">Vous n'avez pas encore passé de commande. <a href=\"/\" style=\"color:var(--rust); font-weight:600;\">Découvrir la boutique →</a></p>";
+        return;
+      }
+      container.innerHTML = orders.map(o => `
+        <div class="order-card">
+          <div class="order-head">
+            <strong>Commande #${o.id}</strong>
+            <span class="status-pill status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
+          </div>
+          <div class="order-items-mini">
+            ${o.items.map(it => `${it.quantity} × ${it.title}`).join('<br>')}
+          </div>
+          <div style="margin-top:10px; font-family:'Space Mono',monospace; font-weight:700; color:var(--rust);">
+            Total : ${fmt(o.total)}
+          </div>
+        </div>`).join('');
+    }catch(e){
+      location.href = '/login.html';
+    }
+  }
+  load();
+</script>
+</body>
+</html>

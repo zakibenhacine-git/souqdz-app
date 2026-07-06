@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — SOUQDZ Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  body{background:var(--sand-deep);}
+  .admin-shell{display:grid; grid-template-columns:220px 1fr; min-height:100vh;}
+  .admin-nav{background:var(--indigo-deep); color:var(--sand); padding:24px 18px; display:flex; flex-direction:column; gap:4px;}
+  .admin-nav .logo{color:var(--sand); font-size:20px; margin-bottom:24px; display:block;}
+  .admin-nav .logo span{color:var(--saffron);}
+  .admin-nav button{
+    text-align:left; padding:11px 14px; border-radius:8px; font-size:13.5px; font-weight:600;
+    color:var(--sand); opacity:.8;
+  }
+  .admin-nav button.active, .admin-nav button:hover{background:rgba(251,246,236,.12); opacity:1;}
+  .admin-main{padding:32px 36px;}
+  .admin-topline{display:flex; justify-content:space-between; align-items:center; margin-bottom:28px;}
+  .admin-topline h1{font-size:24px;}
+  .stats-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px;}
+  .stat-card{background:var(--cream); border:1px solid var(--line); border-radius:14px; padding:20px;}
+  .stat-card span{font-size:12.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em;}
+  .stat-card strong{display:block; font-family:'Fraunces',serif; font-size:26px; margin-top:6px;}
+  table{width:100%; border-collapse:collapse; background:var(--cream); border-radius:12px; overflow:hidden;}
+  th, td{text-align:left; padding:12px 14px; font-size:13.5px; border-bottom:1px solid var(--line);}
+  th{background:var(--sand-deep); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft);}
+  tr:last-child td{border-bottom:none;}
+  td img{width:42px; height:42px; object-fit:cover; border-radius:6px;}
+  .row-actions{display:flex; gap:8px;}
+  .row-actions button{font-size:12px; font-weight:600; padding:6px 10px; border-radius:6px;}
+  .btn-edit{background:var(--indigo); color:var(--sand);}
+  .btn-del{background:var(--rust); color:var(--cream);}
+  .panel-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(34,28,20,.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--cream); border-radius:16px; padding:30px; max-width:520px; width:100%; max-height:88vh; overflow-y:auto;}
+  .modal h2{font-size:20px; margin-bottom:20px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  select.status-select{padding:6px 10px; border-radius:6px; border:1.5px solid var(--line); font-size:12.5px; background:var(--sand);}
+  .tab-section{display:none;}
+  .tab-section.active{display:block;}
+  @media (max-width:900px){
+    .admin-shell{grid-template-columns:1fr;}
+    .admin-nav{flex-direction:row; overflow-x:auto;}
+    .stats-grid{grid-template-columns:1fr 1fr;}
+    table{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="admin-shell">
+  <nav class="admin-nav">
+    <a href="/" class="logo">SOUQ<span>DZ</span></a>
+    <button class="tab-btn active" data-tab="stats">📊 Statistiques</button>
+    <button class="tab-btn" data-tab="products">🛍️ Produits</button>
+    <button class="tab-btn" data-tab="orders">📦 Commandes</button>
+    <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-topline">
+      <h1 id="pageTitle">Statistiques</h1>
+      <a href="/" class="see-all" style="color:var(--indigo);">Voir la boutique →</a>
+    </div>
+
+    <section class="tab-section active" id="tab-stats">
+      <div class="stats-grid" id="statsGrid">
+        <p style="color:var(--ink-soft);">Chargement…</p>
+      </div>
+    </section>
+
+    <section class="tab-section" id="tab-products">
+      <div class="panel-header">
+        <p style="color:var(--ink-soft); font-size:13.5px;">Gérez votre catalogue.</p>
+        <button class="btn btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th></th><th>Produit</th><th>Marque</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
+          <tbody id="productsBody"><tr><td colspan="7">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tab-section" id="tab-orders">
+      <div class="panel-header">
+        <p style="color:var(--ink-soft); font-size:13.5px;">Toutes les commandes reçues.</p>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Wilaya</th><th>Articles</th><th>Total</th><th>Statut</th></tr></thead>
+          <tbody id="ordersBody"><tr><td colspan="7">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Ajouter un produit</h2>
+    <div class="form-error" id="modalErr"></div>
+    <form id="productForm">
+      <input type="hidden" id="p_id">
+      <div class="field-row">
+        <div class="field"><label>Marque</label><input type="text" id="p_brand" required></div>
+        <div class="field"><label>Catégorie</label>
+          <select id="p_category" required>
+            <option value="femme">Femme</option>
+            <option value="homme">Homme</option>
+            <option value="enfant">Enfants</option>
+            <option value="chaussures">Chaussures</option>
+            <option value="beaute">Beauté</option>
+            <option value="maison">Maison</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Titre du produit</label><input type="text" id="p_title" required></div>
+      <div class="field"><label>Description</label><textarea id="p_description"></textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Prix (DA)</label><input type="number" id="p_price" required min="0"></div>
+        <div class="field"><label>Ancien prix (promo, optionnel)</label><input type="number" id="p_old_price" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Stock</label><input type="number" id="p_stock" value="50" min="0"></div>
+        <div class="field"><label>Badge</label>
+          <select id="p_badge">
+            <option value="">Aucun</option>
+            <option value="new">Nouveau</option>
+            <option value="promo">Promo</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Photo du produit</label>
+        <div style="display:flex; gap:14px; align-items:center;">
+          <img id="p_image_preview" src="" alt="" style="width:70px; height:70px; object-fit:cover; border-radius:8px; background:var(--sand-deep); display:none;">
+          <input type="file" id="p_image_file" accept="image/png, image/jpeg, image/webp, image/gif" style="flex:1;">
+        </div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin-top:6px;">Formats acceptés : JPG, PNG, WEBP, GIF (6 Mo max). Laissez vide pour garder la photo actuelle si vous modifiez un produit.</p>
+        <input type="hidden" id="p_image_seed">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeProductModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  // ---- Garde d'accès admin ----
+  (async function guard(){
+    try{
+      const { user } = await api('/auth/me');
+      if(!user || user.role !== 'admin'){ location.href = '/admin/login.html'; }
+    }catch(e){ location.href = '/admin/login.html'; }
+  })();
+
+  async function logout(){
+    await api('/auth/logout', { method: 'POST' });
+    location.href = '/admin/login.html';
+  }
+
+  // ---- Onglets ----
+  const titles = { stats: 'Statistiques', products: 'Produits', orders: 'Commandes' };
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      document.getElementById('pageTitle').textContent = titles[btn.dataset.tab];
+      if(btn.dataset.tab === 'stats') loadStats();
+      if(btn.dataset.tab === 'products') loadProducts();
+      if(btn.dataset.tab === 'orders') loadOrders();
+    });
+  });
+
+  // ---- Stats ----
+  async function loadStats(){
+    const grid = document.getElementById('statsGrid');
+    try{
+      const s = await api('/stats');
+      grid.innerHTML = `
+        <div class="stat-card"><span>Chiffre d'affaires</span><strong>${fmt(s.revenue)}</strong></div>
+        <div class="stat-card"><span>Commandes</span><strong>${s.orderCount}</strong></div>
+        <div class="stat-card"><span>En attente</span><strong>${s.pendingOrders}</strong></div>
+        <div class="stat-card"><span>Produits au catalogue</span><strong>${s.productCount}</strong></div>`;
+    }catch(e){ grid.innerHTML = '<p>Erreur de chargement.</p>'; }
+  }
+
+  // ---- Produits ----
+  let allProducts = [];
+  async function loadProducts(){
+    const body = document.getElementById('productsBody');
+    try{
+      const { products } = await api('/products');
+      allProducts = products;
+      body.innerHTML = products.map(p => `
+        <tr>
+          <td><img src="${imageUrl(p.image_seed, 100, 100)}" alt=""></td>
+          <td>${p.title}</td>
+          <td>${p.brand}</td>
+          <td>${p.category}</td>
+          <td class="mono">${fmt(p.price)}</td>
+          <td>${p.stock}</td>
+          <td class="row-actions">
+            <button class="btn-edit" onclick="openProductModal(${p.id})">Modifier</button>
+            <button class="btn-del" onclick="deleteProduct(${p.id})">Supprimer</button>
+          </td>
+        </tr>`).join('');
+    }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }
+  }
+
+  function openProductModal(id){
+    document.getElementById('modalErr').classList.remove('show');
+    document.getElementById('productForm').reset();
+    const p = id ? allProducts.find(x=>x.id===id) : null;
+    document.getElementById('modalTitle').textContent = p ? 'Modifier le produit' : 'Ajouter un produit';
+    document.getElementById('p_id').value = p ? p.id : '';
+    document.getElementById('p_brand').value = p ? p.brand : '';
+    document.getElementById('p_category').value = p ? p.category : 'femme';
+    document.getElementById('p_title').value = p ? p.title : '';
+    document.getElementById('p_description').value = p ? p.description : '';
+    document.getElementById('p_price').value = p ? p.price : '';
+    document.getElementById('p_old_price').value = p && p.old_price ? p.old_price : '';
+    document.getElementById('p_stock').value = p ? p.stock : 50;
+    document.getElementById('p_badge').value = p ? (p.badge || '') : '';
+    document.getElementById('p_image_seed').value = p ? p.image_seed : '';
+    document.getElementById('p_image_file').value = '';
+    const preview = document.getElementById('p_image_preview');
+    if(p){ preview.src = imageUrl(p.image_seed, 140, 140); preview.style.display = 'block'; }
+    else{ preview.style.display = 'none'; }
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeProductModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+
+  document.getElementById('p_image_file').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const preview = document.getElementById('p_image_preview');
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+  });
+
+  document.getElementById('productForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const id = document.getElementById('p_id').value;
+    const err = document.getElementById('modalErr');
+    err.classList.remove('show');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    const originalLabel = submitBtn.textContent;
+
+    try{
+      let imageSeed = document.getElementById('p_image_seed').value;
+      const file = document.getElementById('p_image_file').files[0];
+
+      if(file){
+        submitBtn.textContent = 'Envoi de la photo…';
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: formData, credentials: 'include' });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || 'Échec de l\'envoi de la photo.');
+        imageSeed = data.url;
+      }
+
+      if(!imageSeed){ throw new Error('Merci d\'ajouter une photo pour ce produit.'); }
+
+      submitBtn.textContent = 'Enregistrement…';
+      const payload = {
+        brand: document.getElementById('p_brand').value,
+        category: document.getElementById('p_category').value,
+        title: document.getElementById('p_title').value,
+        description: document.getElementById('p_description').value,
+        price: Number(document.getElementById('p_price').value),
+        old_price: document.getElementById('p_old_price').value ? Number(document.getElementById('p_old_price').value) : null,
+        stock: Number(document.getElementById('p_stock').value),
+        badge: document.getElementById('p_badge').value,
+        image_seed: imageSeed,
+      };
+      if(id){ await api('/products/' + id, { method: 'PUT', body: JSON.stringify(payload) }); }
+      else{ await api('/products', { method: 'POST', body: JSON.stringify(payload) }); }
+      closeProductModal();
+      showToast('Produit enregistré.');
+      loadProducts();
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalLabel;
+    }
+  });
+
+  async function deleteProduct(id){
+    if(!confirm('Supprimer ce produit définitivement ?')) return;
+    try{
+      await api('/products/' + id, { method: 'DELETE' });
+      showToast('Produit supprimé.');
+      loadProducts();
+    }catch(ex){ showToast(ex.message); }
+  }
+
+  // ---- Commandes ----
+  const STATUS_LABELS = {
+    en_attente: 'En attente', confirmee: 'Confirmée', expediee: 'Expédiée',
+    livree: 'Livrée', annulee: 'Annulée'
+  };
+  async function loadOrders(){
+    const body = document.getElementById('ordersBody');
+    try{
+      const { orders } = await api('/orders');
+      body.innerHTML = orders.length ? orders.map(o => `
+        <tr>
+          <td class="mono">#${o.id}</td>
+          <td>${o.customer_name}</td>
+          <td>${o.phone}</td>
+          <td>${o.wilaya}</td>
+          <td>${o.items.map(it=>`${it.quantity}×${it.title}`).join(', ')}</td>
+          <td class="mono">${fmt(o.total)}</td>
+          <td>
+            <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
+              ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="7">Aucune commande pour le moment.</td></tr>';
+    }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }
+  }
+  async function updateStatus(id, status){
+    try{
+      await api('/orders/' + id + '/status', { method: 'PUT', body: JSON.stringify({ status }) });
+      showToast('Statut mis à jour.');
+    }catch(ex){ showToast(ex.message); }
+  }
+
+  loadStats();
+</script>
+</body>
+</html>
