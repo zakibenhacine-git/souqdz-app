@@ -1,8 +1,14 @@
 const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const db = new DatabaseSync(path.join(__dirname, 'data', 'souqdz.db'));
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new DatabaseSync(path.join(dataDir, 'souqdz.db'));
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
