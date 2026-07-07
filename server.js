@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -23,6 +24,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin/upload', uploadRoutes);
+
+// Photos uploadées par l'admin (stockées dans le dossier permanent)
+app.use('/uploads', express.static(path.join(STORAGE_DIR, 'uploads')));
 
 app.use(express.static(path.join(__dirname, 'public')));
 

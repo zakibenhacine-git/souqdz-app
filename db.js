@@ -3,7 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const dataDir = path.join(__dirname, 'data');
+// STORAGE_DIR : dossier où sont conservées les données qui doivent survivre aux redémarrages
+// (base de données + photos uploadées). En local, c'est simplement ./storage.
+// Sur Render, on montera le disque permanent exactement sur ce chemin.
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
+const dataDir = path.join(STORAGE_DIR, 'db');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }

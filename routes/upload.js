@@ -2,13 +2,20 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, '..', 'storage');
+const uploadsDir = path.join(STORAGE_DIR, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', 'public', 'uploads'));
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
