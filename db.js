@@ -60,7 +60,31 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity INTEGER NOT NULL,
   FOREIGN KEY(order_id) REFERENCES orders(id)
 );
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT NOT NULL DEFAULT 'percent',
+  discount_value INTEGER NOT NULL,
+  min_order INTEGER DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  expires_at TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
 `);
+
+// ---- Migration : ajouter les colonnes de remise aux commandes existantes ----
+const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
+if (!orderColumns.includes('subtotal')) {
+  db.exec('ALTER TABLE orders ADD COLUMN subtotal INTEGER');
+  db.exec('UPDATE orders SET subtotal = total WHERE subtotal IS NULL');
+}
+if (!orderColumns.includes('discount_amount')) {
+  db.exec('ALTER TABLE orders ADD COLUMN discount_amount INTEGER DEFAULT 0');
+}
+if (!orderColumns.includes('coupon_code')) {
+  db.exec('ALTER TABLE orders ADD COLUMN coupon_code TEXT');
+}
 
 // ---- Seed admin account ----
 const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@souqdz.com');

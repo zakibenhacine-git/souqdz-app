@@ -57,6 +57,7 @@
     <a href="/" class="logo">SOUQ<span>DZ</span></a>
     <button class="tab-btn active" data-tab="stats">📊 Statistiques</button>
     <button class="tab-btn" data-tab="products">🛍️ Produits</button>
+    <button class="tab-btn" data-tab="coupons">🏷️ Codes promo</button>
     <button class="tab-btn" data-tab="orders">📦 Commandes</button>
     <button onclick="openPasswordModal()">🔒 Mot de passe</button>
     <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
@@ -87,13 +88,26 @@
       </div>
     </section>
 
+    <section class="tab-section" id="tab-coupons">
+      <div class="panel-header">
+        <p style="color:var(--ink-soft); font-size:13.5px;">Créez des codes de réduction pour booster vos ventes.</p>
+        <button class="btn btn-primary" onclick="openCouponModal()">+ Créer un code promo</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Code</th><th>Remise</th><th>Minimum</th><th>Expire le</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="couponsBody"><tr><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="tab-section" id="tab-orders">
       <div class="panel-header">
         <p style="color:var(--ink-soft); font-size:13.5px;">Toutes les commandes reçues.</p>
       </div>
       <div style="overflow-x:auto;">
         <table>
-          <thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Wilaya</th><th>Articles</th><th>Total</th><th>Statut</th></tr></thead>
+          <thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Wilaya</th><th>Articles</th><th>Total</th><th>Statut</th><th></th></tr></thead>
           <tbody id="ordersBody"><tr><td colspan="7">Chargement…</td></tr></tbody>
         </table>
       </div>
@@ -148,6 +162,32 @@
       <div style="display:flex; gap:10px; margin-top:8px;">
         <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeProductModal()">Annuler</button>
         <button type="submit" class="btn btn-primary" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="couponModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h2>Créer un code promo</h2>
+    <div class="form-error" id="couponErr"></div>
+    <form id="couponForm">
+      <div class="field"><label>Code (ex: BIENVENUE10)</label><input type="text" id="c_code" required style="text-transform:uppercase;"></div>
+      <div class="field-row">
+        <div class="field">
+          <label>Type de remise</label>
+          <select id="c_type">
+            <option value="percent">Pourcentage (%)</option>
+            <option value="fixed">Montant fixe (DA)</option>
+          </select>
+        </div>
+        <div class="field"><label>Valeur</label><input type="number" id="c_value" required min="1"></div>
+      </div>
+      <div class="field"><label>Montant minimum de commande (optionnel)</label><input type="number" id="c_min" value="0" min="0"></div>
+      <div class="field"><label>Date d'expiration (optionnel)</label><input type="date" id="c_expires"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeCouponModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" style="flex:1;">Créer</button>
       </div>
     </form>
   </div>
@@ -226,7 +266,7 @@
   });
 
   // ---- Onglets ----
-  const titles = { stats: 'Statistiques', products: 'Produits', orders: 'Commandes' };
+  const titles = { stats: 'Statistiques', products: 'Produits', coupons: 'Codes promo', orders: 'Commandes' };
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -236,9 +276,79 @@
       document.getElementById('pageTitle').textContent = titles[btn.dataset.tab];
       if(btn.dataset.tab === 'stats') loadStats();
       if(btn.dataset.tab === 'products') loadProducts();
+      if(btn.dataset.tab === 'coupons') loadCoupons();
       if(btn.dataset.tab === 'orders') loadOrders();
     });
   });
+
+  // ---- Codes promo ----
+  let allCoupons = [];
+  async function loadCoupons(){
+    const body = document.getElementById('couponsBody');
+    try{
+      const { coupons } = await api('/coupons');
+      allCoupons = coupons;
+      body.innerHTML = coupons.length ? coupons.map(c => `
+        <tr>
+          <td class="mono">${c.code}</td>
+          <td>${c.discount_type === 'percent' ? c.discount_value + '%' : fmt(c.discount_value)}</td>
+          <td>${c.min_order ? fmt(c.min_order) : '—'}</td>
+          <td>${c.expires_at ? new Date(c.expires_at).toLocaleDateString('fr-FR') : '—'}</td>
+          <td><span class="status-pill ${c.active ? 'status-livree' : 'status-annulee'}">${c.active ? 'Actif' : 'Désactivé'}</span></td>
+          <td class="row-actions">
+            <button class="btn-edit" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Désactiver' : 'Activer'}</button>
+            <button class="btn-del" onclick="deleteCoupon(${c.id})">Supprimer</button>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="6">Aucun code promo pour le moment.</td></tr>';
+    }catch(e){ body.innerHTML = '<tr><td colspan="6">Erreur de chargement.</td></tr>'; }
+  }
+
+  function openCouponModal(){
+    document.getElementById('couponForm').reset();
+    document.getElementById('couponErr').classList.remove('show');
+    document.getElementById('couponModalOverlay').classList.add('open');
+  }
+  function closeCouponModal(){ document.getElementById('couponModalOverlay').classList.remove('open'); }
+
+  document.getElementById('couponForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const err = document.getElementById('couponErr');
+    err.classList.remove('show');
+    try{
+      await api('/coupons', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: document.getElementById('c_code').value,
+          discount_type: document.getElementById('c_type').value,
+          discount_value: Number(document.getElementById('c_value').value),
+          min_order: Number(document.getElementById('c_min').value) || 0,
+          expires_at: document.getElementById('c_expires').value || null,
+        })
+      });
+      closeCouponModal();
+      showToast('Code promo créé.');
+      loadCoupons();
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+    }
+  });
+
+  async function toggleCoupon(id, active){
+    try{
+      await api('/coupons/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+      showToast('Code mis à jour.');
+      loadCoupons();
+    }catch(ex){ showToast(ex.message); }
+  }
+  async function deleteCoupon(id){
+    if(!confirm('Supprimer ce code promo ?')) return;
+    try{
+      await api('/coupons/' + id, { method: 'DELETE' });
+      showToast('Code supprimé.');
+      loadCoupons();
+    }catch(ex){ showToast(ex.message); }
+  }
 
   // ---- Stats ----
   async function loadStats(){
@@ -388,6 +498,9 @@
             <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
               ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
             </select>
+          </td>
+          <td>
+            <a href="/admin/label.html?id=${o.id}" target="_blank" class="btn-edit" style="display:inline-block; text-decoration:none;">🖨️ Étiquette</a>
           </td>
         </tr>`).join('') : '<tr><td colspan="7">Aucune commande pour le moment.</td></tr>';
     }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }

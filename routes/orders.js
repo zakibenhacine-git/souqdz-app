@@ -8,7 +8,7 @@ const VALID_STATUSES = ['en_attente', 'confirmee', 'expediee', 'livree', 'annule
 
 // ---- Créer une commande (checkout à la livraison, compte optionnel) ----
 router.post('/', (req, res) => {
-  const { items, customer_name, phone, wilaya, address } = req.body || {};
+  const { items, customer_name, phone, wilaya, address, coupon_code } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Le panier est vide.' });
   }
@@ -17,29 +17,44 @@ router.post('/', (req, res) => {
   }
 
   // Recalcule les prix côté serveur à partir de la base (jamais confiance au client)
-  let total = 0;
+  let subtotal = 0;
   const resolvedItems = [];
   for (const item of items) {
     const product = db.prepare('SELECT * FROM products WHERE id = ?').get(item.id);
     if (!product) continue;
     const qty = Math.max(1, parseInt(item.qty, 10) || 1);
-    total += product.price * qty;
+    subtotal += product.price * qty;
     resolvedItems.push({ product_id: product.id, title: product.title, price: product.price, quantity: qty });
   }
   if (resolvedItems.length === 0) {
     return res.status(400).json({ error: 'Aucun article valide dans le panier.' });
   }
 
+  // Recalcule la remise côté serveur si un code promo est fourni (jamais confiance au client)
+  let discountAmount = 0;
+  let appliedCode = null;
+  if (coupon_code) {
+    const coupon = db.prepare('SELECT * FROM coupons WHERE code = ?').get(coupon_code.trim().toUpperCase());
+    if (coupon && coupon.active && subtotal >= coupon.min_order &&
+        (!coupon.expires_at || new Date(coupon.expires_at) >= new Date())) {
+      discountAmount = coupon.discount_type === 'percent'
+        ? Math.round((subtotal * coupon.discount_value) / 100)
+        : Math.min(coupon.discount_value, subtotal);
+      appliedCode = coupon.code;
+    }
+  }
+  const total = subtotal - discountAmount;
+
   const userId = req.user ? req.user.id : null;
-  const info = db.prepare(`INSERT INTO orders (user_id, customer_name, phone, wilaya, address, total, status)
-    VALUES (?, ?, ?, ?, ?, ?, 'en_attente')`)
-    .run(userId, customer_name, phone, wilaya, address, total);
+  const info = db.prepare(`INSERT INTO orders (user_id, customer_name, phone, wilaya, address, subtotal, discount_amount, coupon_code, total, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'en_attente')`)
+    .run(userId, customer_name, phone, wilaya, address, subtotal, discountAmount, appliedCode, total);
 
   const orderId = info.lastInsertRowid;
   const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, title, price, quantity) VALUES (?, ?, ?, ?, ?)');
   for (const it of resolvedItems) itemStmt.run(orderId, it.product_id, it.title, it.price, it.quantity);
 
-  res.status(201).json({ order: { id: Number(orderId), total, status: 'en_attente' } });
+  res.status(201).json({ order: { id: Number(orderId), subtotal, discount_amount: discountAmount, coupon_code: appliedCode, total, status: 'en_attente' } });
 });
 
 // ---- Mes commandes (client connecté) ----
@@ -60,6 +75,14 @@ router.get('/', requireAdmin, (req, res) => {
     items: db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(o.id),
   }));
   res.json({ orders: withItems });
+});
+
+// ---- Admin : détail d'une commande précise (pour l'étiquette d'expédition) ----
+router.get('/:id', requireAdmin, (req, res) => {
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Commande introuvable.' });
+  const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
+  res.json({ order: { ...order, items } });
 });
 
 // ---- Admin : changer le statut d'une commande ----

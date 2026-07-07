@@ -10,6 +10,7 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const statsRoutes = require('./routes/stats');
 const uploadRoutes = require('./routes/upload');
+const couponRoutes = require('./routes/coupons');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin/upload', uploadRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Photos uploadées par l'admin (stockées dans le dossier permanent)
 app.use('/uploads', express.static(path.join(STORAGE_DIR, 'uploads')));

@@ -55,6 +55,16 @@
     <div class="summary" id="summary">
       <p style="color:var(--ink-soft);">Chargement du panier…</p>
     </div>
+    <div class="summary" id="couponBox" style="margin-top:16px;">
+      <div class="field" style="margin-bottom:10px;">
+        <label for="couponInput">Code promo</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="couponInput" placeholder="Ex: BIENVENUE10" style="text-transform:uppercase;">
+          <button type="button" class="btn btn-outline" id="applyCouponBtn" style="white-space:nowrap;">Appliquer</button>
+        </div>
+      </div>
+      <p id="couponMsg" style="font-size:13px;"></p>
+    </div>
   </div>
 </div>
 
@@ -68,21 +78,57 @@
   const sel = document.getElementById('wilaya');
   WILAYAS.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
 
+  let appliedCoupon = null;
+
   function renderSummary(){
     const items = Cart.get();
     const summary = document.getElementById('summary');
     if(items.length === 0){
       summary.innerHTML = '<p style="color:var(--ink-soft);">Votre panier est vide. <a href="/" style="color:var(--rust); font-weight:600;">Retour à la boutique</a></p>';
       document.getElementById('submitBtn').disabled = true;
+      document.getElementById('couponBox').style.display = 'none';
       return;
     }
-    summary.innerHTML = items.map(i => `
+    const subtotal = Cart.total();
+    const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+    const total = subtotal - discount;
+    let html = items.map(i => `
       <div class="line">
         <span><img src="${imageUrl(i.image_seed, 80, 80)}" alt="">${i.qty} × ${i.title}</span>
         <span class="mono">${fmt(i.price * i.qty)}</span>
-      </div>`).join('') + `<div class="total"><span>Total</span><span class="mono">${fmt(Cart.total())}</span></div>`;
+      </div>`).join('');
+    if(discount > 0){
+      html += `<div class="line"><span>Sous-total</span><span class="mono">${fmt(subtotal)}</span></div>`;
+      html += `<div class="line" style="color:#276A38;"><span>Code ${appliedCoupon.code}</span><span class="mono">−${fmt(discount)}</span></div>`;
+    }
+    html += `<div class="total"><span>Total</span><span class="mono">${fmt(total)}</span></div>`;
+    summary.innerHTML = html;
   }
   renderSummary();
+
+  document.getElementById('applyCouponBtn').addEventListener('click', async ()=>{
+    const codeInput = document.getElementById('couponInput');
+    const msg = document.getElementById('couponMsg');
+    const code = codeInput.value.trim();
+    if(!code){ return; }
+    msg.style.color = 'var(--ink-soft)';
+    msg.textContent = 'Vérification…';
+    try{
+      const result = await api('/coupons/apply', {
+        method: 'POST',
+        body: JSON.stringify({ code, subtotal: Cart.total() })
+      });
+      appliedCoupon = result;
+      msg.style.color = '#276A38';
+      msg.textContent = `✅ Code "${result.code}" appliqué : −${fmt(result.discount_amount)}`;
+      renderSummary();
+    }catch(ex){
+      appliedCoupon = null;
+      msg.style.color = 'var(--rust)';
+      msg.textContent = ex.message;
+      renderSummary();
+    }
+  });
 
   document.getElementById('checkoutForm').addEventListener('submit', async e=>{
     e.preventDefault();
@@ -102,6 +148,7 @@
           phone: document.getElementById('phone').value,
           wilaya: document.getElementById('wilaya').value,
           address: document.getElementById('address').value,
+          coupon_code: appliedCoupon ? appliedCoupon.code : null,
         })
       });
       Cart.clear();

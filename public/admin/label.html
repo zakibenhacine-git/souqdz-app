@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Étiquette de livraison — SOUQDZ.COM</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #221C14;
+    --ink-soft: #5B5142;
+    --line: #221C14;
+    --rust: #B5502E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Work Sans', sans-serif;
+    color:var(--ink);
+    background:#EDE3D0;
+    padding:24px;
+  }
+  .toolbar{
+    max-width:420px; margin:0 auto 20px; display:flex; gap:10px;
+  }
+  .toolbar button, .toolbar select{
+    flex:1; padding:12px; border-radius:8px; border:1.5px solid var(--ink);
+    background:var(--ink); color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit;
+  }
+  .toolbar select{ background:#fff; color:var(--ink); flex:0 0 auto; }
+
+  .label{
+    max-width:420px; margin:0 auto;
+    background:#fff;
+    border:2px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+  }
+  .label-header{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:2px dashed var(--line); padding-bottom:14px; margin-bottom:14px;
+  }
+  .label-header .brand{ font-family:'Fraunces', serif; font-size:22px; font-weight:700; }
+  .label-header .brand span{ color:var(--rust); }
+  .label-header .order-no{ font-family:'Space Mono', monospace; font-size:13px; text-align:right; }
+  .cod-box{
+    background:var(--ink); color:#fff; text-align:center;
+    padding:12px; border-radius:8px; margin-bottom:16px;
+  }
+  .cod-box .amount{ font-family:'Space Mono', monospace; font-size:26px; font-weight:700; }
+  .cod-box .label-text{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; opacity:.85; }
+  .section{ margin-bottom:14px; }
+  .section .k{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:3px; }
+  .section .v{ font-size:15px; font-weight:600; }
+  .items{ border-top:2px dashed var(--line); padding-top:12px; font-size:12.5px; color:var(--ink-soft); }
+  .items div{ display:flex; justify-content:space-between; padding:2px 0; }
+  .footer-note{ text-align:center; font-size:11px; color:var(--ink-soft); margin-top:16px; }
+
+  @media print{
+    body{ background:#fff; padding:0; }
+    .toolbar{ display:none; }
+    .label{ border:2px solid #000; box-shadow:none; margin:0; max-width:100%; }
+    @page{ size:A6; margin:8mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <select id="orderSelect"></select>
+  <button onclick="window.print()">🖨️ Imprimer</button>
+</div>
+
+<div class="label" id="label">
+  <p style="text-align:center; color:var(--ink-soft);">Chargement…</p>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+  const id = new URLSearchParams(location.search).get('id');
+
+  async function loadOrderList(){
+    try{
+      const { orders } = await api('/orders');
+      const sel = document.getElementById('orderSelect');
+      sel.innerHTML = orders.map(o => `<option value="${o.id}" ${String(o.id)===id?'selected':''}>Commande #${o.id} — ${o.customer_name}</option>`).join('');
+      sel.addEventListener('change', () => {
+        location.href = '/admin/label.html?id=' + sel.value;
+      });
+    }catch(e){ /* silencieux, pas bloquant pour l'étiquette elle-même */ }
+  }
+
+  async function loadLabel(){
+    const container = document.getElementById('label');
+    if(!id){ container.innerHTML = '<p style="text-align:center;">Aucune commande sélectionnée.</p>'; return; }
+    try{
+      const { order } = await api('/orders/' + id);
+      const date = new Date(order.created_at).toLocaleDateString('fr-FR');
+      container.innerHTML = `
+        <div class="label-header">
+          <div class="brand">SOUQ<span>DZ</span>.COM</div>
+          <div class="order-no">Commande<br><strong>#${order.id}</strong><br>${date}</div>
+        </div>
+
+        <div class="cod-box">
+          <div class="label-text">Montant à encaisser (paiement à la livraison)</div>
+          <div class="amount">${fmt(order.total)}</div>
+        </div>
+
+        <div class="section">
+          <div class="k">Destinataire</div>
+          <div class="v">${order.customer_name}</div>
+        </div>
+        <div class="section">
+          <div class="k">Téléphone</div>
+          <div class="v">${order.phone}</div>
+        </div>
+        <div class="section">
+          <div class="k">Wilaya</div>
+          <div class="v">${order.wilaya}</div>
+        </div>
+        <div class="section">
+          <div class="k">Adresse</div>
+          <div class="v" style="font-weight:500;">${order.address}</div>
+        </div>
+
+        <div class="items">
+          ${order.items.map(it => `<div><span>${it.quantity} × ${it.title}</span><span>${fmt(it.price * it.quantity)}</span></div>`).join('')}
+        </div>
+
+        <p class="footer-note">Merci de votre confiance — SOUQDZ.COM</p>
+      `;
+    }catch(e){
+      container.innerHTML = '<p style="text-align:center;">Impossible de charger cette commande.</p>';
+    }
+  }
+
+  loadOrderList();
+  loadLabel();
+</script>
+</body>
+</html>
