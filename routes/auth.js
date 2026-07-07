@@ -55,4 +55,23 @@ router.get('/me', (req, res) => {
   res.json({ user: req.user || null });
 });
 
+const { requireAuth } = require('../middleware/auth');
+
+router.post('/change-password', requireAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Mot de passe actuel et nouveau mot de passe requis.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' });
+  }
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  if (!row || !bcrypt.compareSync(currentPassword, row.password_hash)) {
+    return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
+  }
+  const hash = bcrypt.hashSync(newPassword, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;

@@ -58,6 +58,7 @@
     <button class="tab-btn active" data-tab="stats">📊 Statistiques</button>
     <button class="tab-btn" data-tab="products">🛍️ Produits</button>
     <button class="tab-btn" data-tab="orders">📦 Commandes</button>
+    <button onclick="openPasswordModal()">🔒 Mot de passe</button>
     <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
   </nav>
 
@@ -152,6 +153,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="passwordModalOverlay">
+  <div class="modal" style="max-width:400px;">
+    <h2>Changer le mot de passe</h2>
+    <div class="form-error" id="passwordErr"></div>
+    <div class="form-success" id="passwordSuccess"></div>
+    <form id="passwordForm">
+      <div class="field"><label>Mot de passe actuel</label><input type="password" id="pw_current" required></div>
+      <div class="field"><label>Nouveau mot de passe</label><input type="password" id="pw_new" required minlength="6"></div>
+      <div class="field"><label>Confirmer le nouveau mot de passe</label><input type="password" id="pw_confirm" required minlength="6"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closePasswordModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" style="flex:1;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="/js/common.js"></script>
 <script>
   // ---- Garde d'accès admin ----
@@ -166,6 +184,46 @@
     await api('/auth/logout', { method: 'POST' });
     location.href = '/admin/login.html';
   }
+
+  function openPasswordModal(){
+    document.getElementById('passwordForm').reset();
+    document.getElementById('passwordErr').classList.remove('show');
+    document.getElementById('passwordSuccess').classList.remove('show');
+    document.getElementById('passwordModalOverlay').classList.add('open');
+  }
+  function closePasswordModal(){
+    document.getElementById('passwordModalOverlay').classList.remove('open');
+  }
+  document.getElementById('passwordForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const err = document.getElementById('passwordErr');
+    const success = document.getElementById('passwordSuccess');
+    err.classList.remove('show');
+    success.classList.remove('show');
+    const newPw = document.getElementById('pw_new').value;
+    const confirmPw = document.getElementById('pw_confirm').value;
+    if(newPw !== confirmPw){
+      err.textContent = 'Les deux mots de passe ne correspondent pas.';
+      err.classList.add('show');
+      return;
+    }
+    try{
+      await api('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword: document.getElementById('pw_current').value,
+          newPassword: newPw,
+        })
+      });
+      success.textContent = 'Mot de passe changé avec succès.';
+      success.classList.add('show');
+      document.getElementById('passwordForm').reset();
+      setTimeout(closePasswordModal, 1500);
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+    }
+  });
 
   // ---- Onglets ----
   const titles = { stats: 'Statistiques', products: 'Produits', orders: 'Commandes' };
