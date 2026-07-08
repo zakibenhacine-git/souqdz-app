@@ -53,6 +53,37 @@ nav.catnav{background:var(--indigo);}
 nav.catnav ul{display:flex; gap:2px; list-style:none; overflow-x:auto; padding:0 24px;}
 nav.catnav a{display:block; padding:12px 18px; color:var(--sand); font-size:13.5px; font-weight:500; white-space:nowrap; border-bottom:2px solid transparent; transition:.15s;}
 nav.catnav a:hover, nav.catnav a.active{color:var(--saffron); border-color:var(--saffron);}
+nav.catnav li.has-sub{position:relative;}
+nav.catnav .subnav{
+  position:absolute; top:100%; left:0; min-width:200px;
+  background:var(--cream); border:1px solid var(--line); border-radius:0 0 10px 10px;
+  box-shadow:0 16px 28px -12px rgba(34,28,20,.35);
+  opacity:0; visibility:hidden; transform:translateY(-6px);
+  transition:opacity .18s ease, transform .18s ease, visibility .18s;
+  z-index:60; padding:8px 0;
+}
+nav.catnav li.has-sub:hover .subnav{ opacity:1; visibility:visible; transform:translateY(0); }
+nav.catnav .subnav a{
+  color:var(--ink); padding:10px 18px; font-size:13px; border-bottom:none; font-weight:500;
+}
+nav.catnav .subnav a:hover{ background:var(--sand-deep); color:var(--rust); }
+
+/* ---------- HERO CAROUSEL ---------- */
+.carousel-slide{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  opacity:0; transition:opacity 1s ease;
+}
+.carousel-slide.active{ opacity:1; position:relative; }
+.arch-frame{ position:relative; }
+.arch-frame .carousel-slide:not(.active){ position:absolute; }
+.carousel-dots{
+  position:absolute; bottom:18px; right:18px; display:flex; gap:6px; z-index:5;
+}
+.carousel-dots button{
+  width:8px; height:8px; border-radius:50%; background:rgba(251,246,236,.5); transition:.2s;
+  padding:0;
+}
+.carousel-dots button.active{ background:var(--cream); width:22px; border-radius:5px; }
 
 /* ---------- BUTTONS ---------- */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 26px; border-radius:8px; font-weight:600; font-size:14.5px; transition:transform .15s ease, box-shadow .15s ease;}
