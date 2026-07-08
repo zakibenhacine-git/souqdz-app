@@ -50,7 +50,7 @@ header.main{background:var(--cream); border-bottom:1px solid var(--line); positi
 .cart-count{position:absolute; top:-6px; right:6px; background:var(--rust); color:var(--cream); font-size:10px; font-weight:700; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
 
 nav.catnav{background:var(--indigo);}
-nav.catnav ul{display:flex; gap:2px; list-style:none; overflow-x:auto; padding:0 24px;}
+nav.catnav ul{display:flex; gap:2px; list-style:none; flex-wrap:wrap; padding:0 24px;}
 nav.catnav a{display:block; padding:12px 18px; color:var(--sand); font-size:13.5px; font-weight:500; white-space:nowrap; border-bottom:2px solid transparent; transition:.15s;}
 nav.catnav a:hover, nav.catnav a.active{color:var(--saffron); border-color:var(--saffron);}
 nav.catnav li.has-sub{position:relative;}
@@ -60,7 +60,7 @@ nav.catnav .subnav{
   box-shadow:0 16px 28px -12px rgba(34,28,20,.35);
   opacity:0; visibility:hidden; transform:translateY(-6px);
   transition:opacity .18s ease, transform .18s ease, visibility .18s;
-  z-index:60; padding:8px 0;
+  z-index:200; padding:8px 0;
 }
 nav.catnav li.has-sub:hover .subnav{ opacity:1; visibility:visible; transform:translateY(0); }
 nav.catnav .subnav a{
@@ -110,6 +110,9 @@ nav.catnav .subnav a:hover{ background:var(--sand-deep); color:var(--rust); }
 .arch-frame img{width:100%; height:100%; object-fit:cover;}
 .arch-frame .tag{position:absolute; bottom:18px; left:18px; background:var(--cream); padding:10px 16px; border-radius:8px; font-family:'Space Mono',monospace; font-size:13px; box-shadow:0 8px 16px rgba(0,0,0,.15);}
 .arch-frame .tag strong{color:var(--rust);}
+
+/* Le carrousel de l'accueil reste rectangulaire (coins légèrement arrondis) */
+#heroCarousel{ border-radius:16px; }
 
 /* ---------- SECTIONS ---------- */
 .section{padding:64px 0;}
