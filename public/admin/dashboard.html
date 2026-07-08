@@ -378,8 +378,8 @@
       allProducts = products;
       body.innerHTML = products.map(p => `
         <tr>
-          <td><img src="${imageUrl(p.image_seed, 100, 100)}" alt=""></td>
-          <td>${p.title}</td>
+          <td><a href="/product.html?id=${p.id}" target="_blank" title="Voir la fiche produit"><img src="${imageUrl(p.image_seed, 100, 100)}" alt=""></a></td>
+          <td><a href="/product.html?id=${p.id}" target="_blank" style="color:inherit; text-decoration:underline;" title="Voir la fiche produit">${p.title}</a></td>
           <td>${p.brand}</td>
           <td>${p.category}</td>
           <td class="mono">${fmt(p.price)}</td>
