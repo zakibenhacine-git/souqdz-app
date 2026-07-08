@@ -110,13 +110,16 @@ async function refreshAuthUI(){
   try{
     const { user } = await api('/auth/me');
     const accountLink = document.getElementById('accountLink');
+    const registerLink = document.getElementById('registerLink');
     if(!accountLink) return;
     if(user){
       accountLink.href = '/account.html';
       accountLink.querySelector('.action-label').textContent = user.name.split(' ')[0];
+      if(registerLink) registerLink.style.display = 'none';
     } else {
       accountLink.href = '/login.html';
-      accountLink.querySelector('.action-label').textContent = 'Compte';
+      accountLink.querySelector('.action-label').textContent = 'Connexion';
+      if(registerLink) registerLink.style.display = '';
     }
   }catch(e){ /* silencieux */ }
 }

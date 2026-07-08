@@ -134,6 +134,10 @@
           </select>
         </div>
       </div>
+      <div class="field">
+        <label>Sous-catégorie (optionnel)</label>
+        <input type="text" id="p_subcategory" placeholder="ex: Robes, Sneakers, Parfums…">
+      </div>
       <div class="field"><label>Titre du produit</label><input type="text" id="p_title" required></div>
       <div class="field"><label>Description</label><textarea id="p_description"></textarea></div>
       <div class="field-row">
@@ -394,6 +398,7 @@
     document.getElementById('p_id').value = p ? p.id : '';
     document.getElementById('p_brand').value = p ? p.brand : '';
     document.getElementById('p_category').value = p ? p.category : 'femme';
+    document.getElementById('p_subcategory').value = p ? (p.subcategory || '') : '';
     document.getElementById('p_title').value = p ? p.title : '';
     document.getElementById('p_description').value = p ? p.description : '';
     document.getElementById('p_price').value = p ? p.price : '';
@@ -446,6 +451,7 @@
       const payload = {
         brand: document.getElementById('p_brand').value,
         category: document.getElementById('p_category').value,
+        subcategory: document.getElementById('p_subcategory').value,
         title: document.getElementById('p_title').value,
         description: document.getElementById('p_description').value,
         price: Number(document.getElementById('p_price').value),

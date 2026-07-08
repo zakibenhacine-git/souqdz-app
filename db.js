@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS products (
   price INTEGER NOT NULL,
   old_price INTEGER,
   category TEXT NOT NULL,
+  subcategory TEXT DEFAULT '',
   image_seed TEXT NOT NULL,
   badge TEXT DEFAULT '',
   stock INTEGER DEFAULT 100,
@@ -72,6 +73,12 @@ CREATE TABLE IF NOT EXISTS coupons (
   created_at TEXT DEFAULT (datetime('now'))
 );
 `);
+
+// ---- Migration : ajouter la sous-catégorie aux produits existants ----
+const productColumns = db.prepare("PRAGMA table_info(products)").all().map(c => c.name);
+if (!productColumns.includes('subcategory')) {
+  db.exec("ALTER TABLE products ADD COLUMN subcategory TEXT DEFAULT ''");
+}
 
 // ---- Migration : ajouter les colonnes de remise aux commandes existantes ----
 const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);

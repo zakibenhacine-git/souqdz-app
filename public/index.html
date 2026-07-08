@@ -28,9 +28,13 @@
       </button>
     </form>
     <div class="header-actions">
+      <a href="/register.html" class="action" id="registerLink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+        <span class="action-label">S'inscrire</span>
+      </a>
       <a href="/login.html" class="action" id="accountLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="action-label">Compte</span>
+        <span class="action-label">Connexion</span>
       </a>
       <button class="action" onclick="toggleCart(true)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
@@ -42,12 +46,57 @@
   <nav class="catnav">
     <ul style="max-width:1240px; margin:0 auto;">
       <li><a href="#" class="active" data-filter="all">Tout</a></li>
-      <li><a href="#" data-filter="femme">Femme</a></li>
-      <li><a href="#" data-filter="homme">Homme</a></li>
-      <li><a href="#" data-filter="enfant">Enfants</a></li>
-      <li><a href="#" data-filter="chaussures">Chaussures</a></li>
-      <li><a href="#" data-filter="beaute">Beauté</a></li>
-      <li><a href="#" data-filter="maison">Maison</a></li>
+      <li class="has-sub">
+        <a href="#" data-filter="femme">Femme</a>
+        <div class="subnav">
+          <a href="#" data-filter="femme" data-sub="Robes">Robes</a>
+          <a href="#" data-filter="femme" data-sub="Hauts &amp; T-shirts">Hauts &amp; T-shirts</a>
+          <a href="#" data-filter="femme" data-sub="Pantalons">Pantalons</a>
+          <a href="#" data-filter="femme" data-sub="Abayas">Abayas</a>
+          <a href="#" data-filter="femme" data-sub="Accessoires">Accessoires</a>
+        </div>
+      </li>
+      <li class="has-sub">
+        <a href="#" data-filter="homme">Homme</a>
+        <div class="subnav">
+          <a href="#" data-filter="homme" data-sub="Chemises">Chemises</a>
+          <a href="#" data-filter="homme" data-sub="Pantalons">Pantalons</a>
+          <a href="#" data-filter="homme" data-sub="Vestes">Vestes</a>
+          <a href="#" data-filter="homme" data-sub="Accessoires">Accessoires</a>
+        </div>
+      </li>
+      <li class="has-sub">
+        <a href="#" data-filter="enfant">Enfants</a>
+        <div class="subnav">
+          <a href="#" data-filter="enfant" data-sub="Filles">Filles</a>
+          <a href="#" data-filter="enfant" data-sub="Garçons">Garçons</a>
+          <a href="#" data-filter="enfant" data-sub="Bébé">Bébé</a>
+        </div>
+      </li>
+      <li class="has-sub">
+        <a href="#" data-filter="chaussures">Chaussures</a>
+        <div class="subnav">
+          <a href="#" data-filter="chaussures" data-sub="Sneakers">Sneakers</a>
+          <a href="#" data-filter="chaussures" data-sub="Sandales">Sandales</a>
+          <a href="#" data-filter="chaussures" data-sub="Babouches">Babouches</a>
+        </div>
+      </li>
+      <li class="has-sub">
+        <a href="#" data-filter="beaute">Beauté</a>
+        <div class="subnav">
+          <a href="#" data-filter="beaute" data-sub="Soin visage">Soin visage</a>
+          <a href="#" data-filter="beaute" data-sub="Parfums">Parfums</a>
+          <a href="#" data-filter="beaute" data-sub="Maquillage">Maquillage</a>
+        </div>
+      </li>
+      <li class="has-sub">
+        <a href="#" data-filter="maison">Maison</a>
+        <div class="subnav">
+          <a href="#" data-filter="maison" data-sub="Déco">Déco</a>
+          <a href="#" data-filter="maison" data-sub="Textile">Textile</a>
+          <a href="#" data-filter="maison" data-sub="Cuisine">Cuisine</a>
+        </div>
+      </li>
     </ul>
   </nav>
 </header>
@@ -68,9 +117,13 @@
         <div><strong>4.7/5</strong><span>Avis clients</span></div>
       </div>
     </div>
-    <div class="arch-frame">
-      <img src="https://picsum.photos/seed/souqdz-hero/700/900" alt="Mannequin portant une tenue de la collection été SOUQDZ">
-      <div class="tag">Look du jour <br><strong>4 500 DA</strong></div>
+    <div class="arch-frame" id="heroCarousel">
+      <img src="https://picsum.photos/seed/souqdz-hero/700/900" alt="Mannequin portant une tenue de la collection été SOUQDZ" class="carousel-slide active" data-tag="Look du jour">
+      <img src="https://picsum.photos/seed/souqdz-hero2/700/900" alt="Sneakers et accessoires de la collection SOUQDZ" class="carousel-slide" data-tag="Sneakers tendance">
+      <img src="https://picsum.photos/seed/souqdz-hero3/700/900" alt="Sélection beauté et parfums SOUQDZ" class="carousel-slide" data-tag="Coffret beauté">
+      <img src="https://picsum.photos/seed/souqdz-hero4/700/900" alt="Décoration maison SOUQDZ" class="carousel-slide" data-tag="Déco maison">
+      <div class="tag" id="heroTag">Look du jour <br><strong>4 500 DA</strong></div>
+      <div class="carousel-dots" id="carouselDots"></div>
     </div>
   </div>
 </section>
@@ -166,6 +219,7 @@
 <script src="/js/common.js"></script>
 <script>
   let currentFilter = 'all';
+  let currentSubcategory = '';
   let currentSearch = '';
 
   function cardHTML(p){
@@ -206,6 +260,7 @@
     try{
       const params = new URLSearchParams();
       if(currentFilter !== 'all') params.set('category', currentFilter);
+      if(currentSubcategory) params.set('subcategory', currentSubcategory);
       if(currentSearch) params.set('search', currentSearch);
       const { products } = await api('/products?' + params.toString());
       document.getElementById('resultCount').textContent = products.length + ' article(s) trouvé(s)';
@@ -217,17 +272,26 @@
     }
   }
 
-  function applyFilter(filter){
+  function applyFilter(filter, subcategory){
     currentFilter = filter;
+    currentSubcategory = subcategory || '';
     document.querySelectorAll('.filter-btn').forEach(b=> b.classList.toggle('active', b.dataset.filter===filter));
-    document.querySelectorAll('nav.catnav a').forEach(a=> a.classList.toggle('active', a.dataset.filter===filter));
+    document.querySelectorAll('nav.catnav > ul > li > a').forEach(a=> a.classList.toggle('active', a.dataset.filter===filter && !subcategory));
+    document.getElementById('produits').scrollIntoView({behavior:'smooth'});
     loadProducts();
   }
 
-  document.querySelectorAll('.filter-btn, nav.catnav a').forEach(el=>{
+  document.querySelectorAll('.filter-btn, nav.catnav > ul > li > a').forEach(el=>{
     el.addEventListener('click', e=>{
       e.preventDefault();
       applyFilter(el.dataset.filter);
+    });
+  });
+
+  document.querySelectorAll('nav.catnav .subnav a').forEach(el=>{
+    el.addEventListener('click', e=>{
+      e.preventDefault();
+      applyFilter(el.dataset.filter, el.dataset.sub);
     });
   });
 
@@ -236,6 +300,38 @@
     currentSearch = document.getElementById('searchInput').value.trim();
     applyFilter('all');
   });
+
+  // ---- Carrousel héros (change toutes les 3 secondes) ----
+  (function initCarousel(){
+    const slides = document.querySelectorAll('#heroCarousel .carousel-slide');
+    const dotsContainer = document.getElementById('carouselDots');
+    const tagEl = document.getElementById('heroTag');
+    let current = 0;
+
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      if(i === 0) dot.classList.add('active');
+      dot.setAttribute('aria-label', 'Image ' + (i+1));
+      dot.addEventListener('click', () => showSlide(i));
+      dotsContainer.appendChild(dot);
+    });
+    const dots = dotsContainer.querySelectorAll('button');
+
+    function showSlide(index){
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = index;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+      const tag = slides[current].dataset.tag;
+      if(tag) tagEl.innerHTML = tag + '<br><strong>4 500 DA</strong>';
+    }
+
+    setInterval(() => {
+      const next = (current + 1) % slides.length;
+      showSlide(next);
+    }, 3000);
+  })();
 
   loadProducts();
 </script>
