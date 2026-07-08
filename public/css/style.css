@@ -96,7 +96,7 @@ nav.catnav .subnav a:hover{ background:var(--sand-deep); color:var(--rust); }
 
 /* ---------- HERO ---------- */
 .hero{padding:56px 0 64px; overflow:hidden;}
-.hero .wrap{display:grid; grid-template-columns:1.6fr 0.4fr; align-items:center; gap:32px; max-width:1600px;}
+.hero .wrap{display:grid; grid-template-columns:1.1fr 0.9fr; align-items:center; gap:40px;}
 .hero-eyebrow{font-family:'Space Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--rust); margin-bottom:16px; display:block;}
 .hero h1{font-size:clamp(36px, 5vw, 58px); line-height:1.04; margin-bottom:20px;}
 .hero h1 em{font-style:italic; color:var(--indigo);}
@@ -112,7 +112,7 @@ nav.catnav .subnav a:hover{ background:var(--sand-deep); color:var(--rust); }
 .arch-frame .tag strong{color:var(--rust);}
 
 /* Le carrousel de l'accueil reste rectangulaire et horizontal (format paysage) */
-#heroCarousel{ border-radius:16px; aspect-ratio:3/2; }
+#heroCarousel{ border-radius:16px; aspect-ratio:16/9; }
 
 /* ---------- SECTIONS ---------- */
 .section{padding:64px 0;}
