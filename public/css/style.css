@@ -1,13 +1,13 @@
 :root{
-  --sand: #EDE3D0;
-  --sand-deep: #E2D5B9;
+  --sand: #F7F3EA;
+  --sand-deep: #ECE3CE;
   --ink: #221C14;
   --ink-soft: #5B5142;
   --indigo: #2D4159;
   --indigo-deep: #1D2C3D;
   --rust: #B5502E;
   --saffron: #E3A73E;
-  --cream: #FBF6EC;
+  --cream: #FFFEFA;
   --line: rgba(34,28,20,0.14);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -111,8 +111,8 @@ nav.catnav .subnav a:hover{ background:var(--sand-deep); color:var(--rust); }
 .arch-frame .tag{position:absolute; bottom:18px; left:18px; background:var(--cream); padding:10px 16px; border-radius:8px; font-family:'Space Mono',monospace; font-size:13px; box-shadow:0 8px 16px rgba(0,0,0,.15);}
 .arch-frame .tag strong{color:var(--rust);}
 
-/* Le carrousel de l'accueil reste rectangulaire (coins légèrement arrondis) */
-#heroCarousel{ border-radius:16px; }
+/* Le carrousel de l'accueil reste rectangulaire et horizontal (format paysage) */
+#heroCarousel{ border-radius:16px; aspect-ratio:16/10; }
 
 /* ---------- SECTIONS ---------- */
 .section{padding:64px 0;}
