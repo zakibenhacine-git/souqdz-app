@@ -136,7 +136,9 @@
       </div>
       <div class="field">
         <label>Sous-catégorie (optionnel)</label>
-        <input type="text" id="p_subcategory" placeholder="ex: Robes, Sneakers, Parfums…">
+        <select id="p_subcategory">
+          <option value="">Aucune</option>
+        </select>
       </div>
       <div class="field"><label>Titre du produit</label><input type="text" id="p_title" required></div>
       <div class="field"><label>Description</label><textarea id="p_description"></textarea></div>
@@ -390,6 +392,26 @@
     }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }
   }
 
+  const SUBCATEGORIES = {
+    femme: ['Robes', 'Hauts & T-shirts', 'Pantalons', 'Abayas', 'Accessoires'],
+    homme: ['Chemises', 'Pantalons', 'Vestes', 'Accessoires'],
+    enfant: ['Filles', 'Garçons', 'Bébé'],
+    chaussures: ['Sneakers', 'Sandales', 'Babouches'],
+    beaute: ['Soin visage', 'Parfums', 'Maquillage'],
+    maison: ['Déco', 'Textile', 'Cuisine'],
+  };
+
+  function populateSubcategories(category, selected){
+    const sel = document.getElementById('p_subcategory');
+    const options = SUBCATEGORIES[category] || [];
+    sel.innerHTML = '<option value="">Aucune</option>' +
+      options.map(o => `<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('');
+  }
+
+  document.getElementById('p_category').addEventListener('change', (e)=>{
+    populateSubcategories(e.target.value, '');
+  });
+
   function openProductModal(id){
     document.getElementById('modalErr').classList.remove('show');
     document.getElementById('productForm').reset();
@@ -398,7 +420,7 @@
     document.getElementById('p_id').value = p ? p.id : '';
     document.getElementById('p_brand').value = p ? p.brand : '';
     document.getElementById('p_category').value = p ? p.category : 'femme';
-    document.getElementById('p_subcategory').value = p ? (p.subcategory || '') : '';
+    populateSubcategories(p ? p.category : 'femme', p ? (p.subcategory || '') : '');
     document.getElementById('p_title').value = p ? p.title : '';
     document.getElementById('p_description').value = p ? p.description : '';
     document.getElementById('p_price').value = p ? p.price : '';
