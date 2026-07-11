@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tableau de bord — SOUQDZ Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=4">
+<link rel="stylesheet" href="/css/style.css?v=5">
 <style>
   body{background:var(--sand-deep);}
   .admin-shell{display:grid; grid-template-columns:220px 1fr; min-height:100vh;}
@@ -55,9 +55,10 @@
 <div class="admin-shell">
   <nav class="admin-nav">
     <a href="/" class="logo">SOUQ<span>DZ</span></a>
-    <button class="tab-btn active" data-tab="stats">📊 Statistiques</button>
+    <button class="tab-btn active" data-tab="stats" id="tabBtnStats">📊 Statistiques</button>
     <button class="tab-btn" data-tab="products">🛍️ Produits</button>
-    <button class="tab-btn" data-tab="coupons">🏷️ Codes promo</button>
+    <button class="tab-btn" data-tab="coupons" id="tabBtnCoupons">🏷️ Codes promo</button>
+    <button class="tab-btn" data-tab="vendors" id="tabBtnVendors">🧑‍💼 Vendeurs</button>
     <button class="tab-btn" data-tab="orders">📦 Commandes</button>
     <button onclick="openPasswordModal()">🔒 Mot de passe</button>
     <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
@@ -97,6 +98,19 @@
         <table>
           <thead><tr><th>Code</th><th>Remise</th><th>Minimum</th><th>Expire le</th><th>Statut</th><th></th></tr></thead>
           <tbody id="couponsBody"><tr><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tab-section" id="tab-vendors">
+      <div class="panel-header">
+        <p style="color:var(--ink-soft); font-size:13.5px;">Créez et gérez les comptes de vos vendeurs.</p>
+        <button class="btn btn-primary" onclick="openVendorModal()">+ Créer un vendeur</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Nom</th><th>Email</th><th>Produits</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="vendorsBody"><tr><td colspan="5">Chargement…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -199,6 +213,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="vendorModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <h2>Créer un compte vendeur</h2>
+    <div class="form-error" id="vendorErr"></div>
+    <form id="vendorForm">
+      <div class="field"><label>Nom du vendeur / boutique</label><input type="text" id="v_name" required></div>
+      <div class="field"><label>Email</label><input type="email" id="v_email" required></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="v_password" required minlength="6"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeVendorModal()">Annuler</button>
+        <button type="submit" class="btn btn-primary" style="flex:1;">Créer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="passwordModalOverlay">
   <div class="modal" style="max-width:400px;">
     <h2>Changer le mot de passe</h2>
@@ -218,11 +248,29 @@
 
 <script src="/js/common.js"></script>
 <script>
-  // ---- Garde d'accès admin ----
+  // ---- Garde d'accès admin/vendeur, avec adaptation de l'interface selon le rôle ----
+  let currentUser = null;
   (async function guard(){
     try{
       const { user } = await api('/auth/me');
-      if(!user || user.role !== 'admin'){ location.href = '/admin/login.html'; }
+      if(!user || (user.role !== 'admin' && user.role !== 'vendor')){ location.href = '/admin/login.html'; return; }
+      currentUser = user;
+      if(user.role === 'vendor'){
+        // Un vendeur ne voit ni les statistiques globales, ni les codes promo, ni la gestion des vendeurs
+        document.getElementById('tabBtnStats').style.display = 'none';
+        document.getElementById('tabBtnCoupons').style.display = 'none';
+        document.getElementById('tabBtnVendors').style.display = 'none';
+        // Il arrive directement sur ses produits
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
+        document.querySelector('.tab-btn[data-tab="products"]').classList.add('active');
+        document.getElementById('tab-products').classList.add('active');
+        document.getElementById('pageTitle').textContent = 'Mes produits';
+        loadProducts();
+      } else {
+        document.getElementById('tabBtnVendors').style.display = '';
+        loadStats();
+      }
     }catch(e){ location.href = '/admin/login.html'; }
   })();
 
@@ -272,7 +320,7 @@
   });
 
   // ---- Onglets ----
-  const titles = { stats: 'Statistiques', products: 'Produits', coupons: 'Codes promo', orders: 'Commandes' };
+  const titles = { stats: 'Statistiques', products: 'Produits', coupons: 'Codes promo', vendors: 'Vendeurs', orders: 'Commandes' };
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -283,9 +331,74 @@
       if(btn.dataset.tab === 'stats') loadStats();
       if(btn.dataset.tab === 'products') loadProducts();
       if(btn.dataset.tab === 'coupons') loadCoupons();
+      if(btn.dataset.tab === 'vendors') loadVendors();
       if(btn.dataset.tab === 'orders') loadOrders();
     });
   });
+
+  // ---- Vendeurs (admin uniquement) ----
+  async function loadVendors(){
+    const body = document.getElementById('vendorsBody');
+    try{
+      const { vendors } = await api('/admin/vendors');
+      body.innerHTML = vendors.length ? vendors.map(v => `
+        <tr>
+          <td>${v.name}</td>
+          <td>${v.email}</td>
+          <td>${v.product_count}</td>
+          <td><span class="status-pill ${v.active ? 'status-livree' : 'status-annulee'}">${v.active ? 'Actif' : 'Suspendu'}</span></td>
+          <td class="row-actions">
+            <button class="btn-edit" onclick="toggleVendor(${v.id}, ${v.active ? 0 : 1})">${v.active ? 'Suspendre' : 'Réactiver'}</button>
+            <button class="btn-del" onclick="deleteVendor(${v.id})">Supprimer</button>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="5">Aucun vendeur pour le moment.</td></tr>';
+    }catch(e){ body.innerHTML = '<tr><td colspan="5">Erreur de chargement.</td></tr>'; }
+  }
+
+  function openVendorModal(){
+    document.getElementById('vendorForm').reset();
+    document.getElementById('vendorErr').classList.remove('show');
+    document.getElementById('vendorModalOverlay').classList.add('open');
+  }
+  function closeVendorModal(){ document.getElementById('vendorModalOverlay').classList.remove('open'); }
+
+  document.getElementById('vendorForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const err = document.getElementById('vendorErr');
+    err.classList.remove('show');
+    try{
+      await api('/admin/vendors', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: document.getElementById('v_name').value,
+          email: document.getElementById('v_email').value,
+          password: document.getElementById('v_password').value,
+        })
+      });
+      closeVendorModal();
+      showToast('Vendeur créé.');
+      loadVendors();
+    }catch(ex){
+      err.textContent = ex.message;
+      err.classList.add('show');
+    }
+  });
+
+  async function toggleVendor(id, active){
+    try{
+      await api('/admin/vendors/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+      showToast('Vendeur mis à jour.');
+      loadVendors();
+    }catch(ex){ showToast(ex.message); }
+  }
+  async function deleteVendor(id){
+    if(!confirm('Supprimer ce compte vendeur ?')) return;
+    try{
+      await api('/admin/vendors/' + id, { method: 'DELETE' });
+      showToast('Vendeur supprimé.');
+      loadVendors();
+    }catch(ex){ showToast(ex.message); }
+  }
 
   // ---- Codes promo ----
   let allCoupons = [];
@@ -374,7 +487,7 @@
   async function loadProducts(){
     const body = document.getElementById('productsBody');
     try{
-      const { products } = await api('/products');
+      const { products } = await api('/products/mine');
       allProducts = products;
       body.innerHTML = products.map(p => `
         <tr>
@@ -514,6 +627,7 @@
     const body = document.getElementById('ordersBody');
     try{
       const { orders } = await api('/orders');
+      const isVendor = currentUser && currentUser.role === 'vendor';
       body.innerHTML = orders.length ? orders.map(o => `
         <tr>
           <td class="mono">#${o.id}</td>
@@ -521,11 +635,13 @@
           <td>${o.phone}</td>
           <td>${o.wilaya}</td>
           <td>${o.items.map(it=>`${it.quantity}×${it.title}`).join(', ')}</td>
-          <td class="mono">${fmt(o.total)}</td>
+          <td class="mono">${fmt(isVendor ? o.vendor_subtotal : o.total)}</td>
           <td>
-            <select class="status-select" onchange="updateStatus(${o.id}, this.value)">
-              ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
-            </select>
+            ${isVendor
+              ? `<span class="status-pill status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>`
+              : `<select class="status-select" onchange="updateStatus(${o.id}, this.value)">
+                  ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
+                </select>`}
           </td>
           <td>
             <a href="/admin/label.html?id=${o.id}" target="_blank" class="btn-edit" style="display:inline-block; text-decoration:none;">🖨️ Étiquette</a>

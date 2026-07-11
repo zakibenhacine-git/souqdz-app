@@ -215,7 +215,7 @@ footer{background:var(--indigo-deep); color:var(--sand); margin-top:64px;}
 /* ---------- PRODUCT DETAIL ---------- */
 .product-detail{padding:48px 0;}
 .pd-grid{display:grid; grid-template-columns:1fr 1fr; gap:48px;}
-.pd-grid .arch-frame{aspect-ratio:1/1;}
+.pd-grid .arch-frame{aspect-ratio:1/1; border-radius:16px;}
 .pd-brand{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:600;}
 .pd-title{font-size:32px; margin:8px 0 16px;}
 .pd-price{display:flex; align-items:baseline; gap:12px; margin-bottom:22px;}
