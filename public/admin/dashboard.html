@@ -58,7 +58,7 @@
     <button class="tab-btn active" data-tab="stats" id="tabBtnStats">📊 Statistiques</button>
     <button class="tab-btn" data-tab="products">🛍️ Produits</button>
     <button class="tab-btn" data-tab="coupons" id="tabBtnCoupons">🏷️ Codes promo</button>
-    <button class="tab-btn" data-tab="vendors" id="tabBtnVendors">🧑‍💼 Vendeurs</button>
+    <button class="tab-btn" data-tab="vendors" id="tabBtnVendors" style="display:none;">🧑‍💼 Vendeurs</button>
     <button class="tab-btn" data-tab="orders">📦 Commandes</button>
     <button onclick="openPasswordModal()">🔒 Mot de passe</button>
     <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
@@ -268,7 +268,6 @@
         document.getElementById('pageTitle').textContent = 'Mes produits';
         loadProducts();
       } else {
-        document.getElementById('tabBtnVendors').style.display = '';
         loadStats();
       }
     }catch(e){ location.href = '/admin/login.html'; }
