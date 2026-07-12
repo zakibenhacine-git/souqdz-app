@@ -486,7 +486,7 @@
   async function loadProducts(){
     const body = document.getElementById('productsBody');
     try{
-      const { products } = await api('/products/mine');
+      const { products } = await api('/products');
       allProducts = products;
       body.innerHTML = products.map(p => `
         <tr>
