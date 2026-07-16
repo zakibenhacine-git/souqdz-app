@@ -40,6 +40,33 @@
   .modal h2{font-size:20px; margin-bottom:20px;}
   .field-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   select.status-select{padding:6px 10px; border-radius:6px; border:1.5px solid var(--line); font-size:12.5px; background:var(--sand);}
+
+  .nav-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; height:20px; padding:0 5px; border-radius:10px;
+    background:var(--rust); color:var(--cream); font-size:11px; font-weight:700;
+    margin-left:6px; vertical-align:middle;
+  }
+
+  .kanban-board{ display:flex; gap:16px; overflow-x:auto; padding-bottom:12px; align-items:flex-start; }
+  .kanban-col{ background:var(--sand-deep); border-radius:14px; padding:14px; width:280px; flex-shrink:0; }
+  .kanban-col-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 4px; }
+  .kanban-col-head h3{ font-size:13.5px; font-weight:700; }
+  .kanban-count{ background:var(--cream); border-radius:10px; padding:2px 9px; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+  .kanban-cards{ display:flex; flex-direction:column; gap:10px; min-height:40px; }
+  .kanban-card{ background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .kanban-card .k-id{ font-family:'Space Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; }
+  .kanban-card .k-name{ font-size:13.5px; font-weight:700; margin-bottom:2px; }
+  .kanban-card .k-meta{ font-size:12px; color:var(--ink-soft); margin-bottom:8px; line-height:1.5; }
+  .kanban-card .k-total{ font-family:'Space Mono',monospace; font-weight:700; color:var(--rust); font-size:14px; margin-bottom:10px; }
+  .kanban-card .k-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .kanban-card .k-actions button, .kanban-card .k-actions a{
+    font-size:11px; font-weight:700; padding:6px 9px; border-radius:6px; text-decoration:none; text-align:center; flex:1;
+  }
+  .k-btn-next{ background:var(--indigo); color:var(--cream); }
+  .k-btn-cancel{ background:transparent; color:var(--rust); border:1px solid var(--rust); }
+  .k-btn-label{ background:var(--sand); color:var(--ink); border:1px solid var(--line); }
+  .kanban-empty{ font-size:12px; color:var(--ink-soft); text-align:center; padding:16px 0; }
   .tab-section{display:none;}
   .tab-section.active{display:block;}
   @media (max-width:900px){
@@ -59,7 +86,7 @@
     <button class="tab-btn" data-tab="products">🛍️ Produits</button>
     <button class="tab-btn" data-tab="coupons" id="tabBtnCoupons">🏷️ Codes promo</button>
     <button class="tab-btn" data-tab="vendors" id="tabBtnVendors" style="display:none;">🧑‍💼 Vendeurs</button>
-    <button class="tab-btn" data-tab="orders">📦 Commandes</button>
+    <button class="tab-btn" data-tab="orders">📦 Commandes<span class="nav-badge" id="ordersBadge" style="display:none;">0</span></button>
     <button onclick="openPasswordModal()">🔒 Mot de passe</button>
     <button onclick="logout()" style="margin-top:auto;">↩ Déconnexion</button>
   </nav>
@@ -117,13 +144,11 @@
 
     <section class="tab-section" id="tab-orders">
       <div class="panel-header">
-        <p style="color:var(--ink-soft); font-size:13.5px;">Toutes les commandes reçues.</p>
+        <p style="color:var(--ink-soft); font-size:13.5px;">Suivez vos commandes de l'arrivée à la livraison.</p>
+        <button class="btn btn-primary" onclick="exportOrdersCSV()">📥 Télécharger le fichier de livraison</button>
       </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Wilaya</th><th>Articles</th><th>Total</th><th>Statut</th><th></th></tr></thead>
-          <tbody id="ordersBody"><tr><td colspan="7">Chargement…</td></tr></tbody>
-        </table>
+      <div class="kanban-board" id="kanbanBoard">
+        <p style="color:var(--ink-soft);">Chargement…</p>
       </div>
     </section>
   </main>
@@ -617,45 +642,109 @@
     }catch(ex){ showToast(ex.message); }
   }
 
-  // ---- Commandes ----
+  // ---- Commandes (tableau kanban) ----
   const STATUS_LABELS = {
     en_attente: 'En attente', confirmee: 'Confirmée', expediee: 'Expédiée',
     livree: 'Livrée', annulee: 'Annulée'
   };
+  const STATUS_ORDER = ['en_attente', 'confirmee', 'expediee', 'livree'];
+  let lastOrders = [];
+
   async function loadOrders(){
-    const body = document.getElementById('ordersBody');
+    const board = document.getElementById('kanbanBoard');
     try{
       const { orders } = await api('/orders');
-      const isVendor = currentUser && currentUser.role === 'vendor';
-      body.innerHTML = orders.length ? orders.map(o => `
-        <tr>
-          <td class="mono">#${o.id}</td>
-          <td>${o.customer_name}</td>
-          <td>${o.phone}</td>
-          <td>${o.wilaya}</td>
-          <td>${o.items.map(it=>`${it.quantity}×${it.title}`).join(', ')}</td>
-          <td class="mono">${fmt(isVendor ? o.vendor_subtotal : o.total)}</td>
-          <td>
-            ${isVendor
-              ? `<span class="status-pill status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>`
-              : `<select class="status-select" onchange="updateStatus(${o.id}, this.value)">
-                  ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
-                </select>`}
-          </td>
-          <td>
-            <a href="/admin/label.html?id=${o.id}" target="_blank" class="btn-edit" style="display:inline-block; text-decoration:none;">🖨️ Étiquette</a>
-          </td>
-        </tr>`).join('') : '<tr><td colspan="7">Aucune commande pour le moment.</td></tr>';
-    }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }
+      lastOrders = orders;
+      renderKanban(orders);
+      updateOrdersBadge(orders);
+    }catch(e){ board.innerHTML = '<p style="color:var(--ink-soft);">Erreur de chargement.</p>'; }
   }
+
+  function renderKanban(orders){
+    const board = document.getElementById('kanbanBoard');
+    const isVendor = currentUser && currentUser.role === 'vendor';
+    board.innerHTML = STATUS_ORDER.concat(['annulee']).map(status => {
+      const colOrders = orders.filter(o => o.status === status);
+      const cards = colOrders.map(o => {
+        const total = fmt(isVendor ? o.vendor_subtotal : o.total);
+        const items = o.items.map(it=>`${it.quantity}×${it.title}`).join(', ');
+        const nextIndex = STATUS_ORDER.indexOf(status) + 1;
+        const nextStatus = STATUS_ORDER[nextIndex];
+        let actions = `<a href="/admin/label.html?id=${o.id}" target="_blank" class="k-btn-label">🖨️ Étiquette</a>`;
+        if(!isVendor){
+          if(nextStatus){
+            actions = `<button class="k-btn-next" onclick="updateStatus(${o.id}, '${nextStatus}')">${STATUS_LABELS[nextStatus]} →</button>` + actions;
+          }
+          if(status !== 'annulee' && status !== 'livree'){
+            actions += `<button class="k-btn-cancel" onclick="updateStatus(${o.id}, 'annulee')">Annuler</button>`;
+          }
+        }
+        return `
+          <div class="kanban-card">
+            <div class="k-id">#${o.id}</div>
+            <div class="k-name">${o.customer_name}</div>
+            <div class="k-meta">${o.phone} · ${o.wilaya}<br>${items}</div>
+            <div class="k-total">${total}</div>
+            <div class="k-actions">${actions}</div>
+          </div>`;
+      }).join('') || '<div class="kanban-empty">Aucune commande ici</div>';
+
+      return `
+        <div class="kanban-col">
+          <div class="kanban-col-head">
+            <h3>${STATUS_LABELS[status]}</h3>
+            <span class="kanban-count">${colOrders.length}</span>
+          </div>
+          <div class="kanban-cards">${cards}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateOrdersBadge(orders){
+    const count = orders.filter(o => o.status === 'en_attente').length;
+    const badge = document.getElementById('ordersBadge');
+    if(count > 0){ badge.textContent = count; badge.style.display = 'inline-flex'; }
+    else{ badge.style.display = 'none'; }
+  }
+
   async function updateStatus(id, status){
     try{
       await api('/orders/' + id + '/status', { method: 'PUT', body: JSON.stringify({ status }) });
       showToast('Statut mis à jour.');
+      loadOrders();
     }catch(ex){ showToast(ex.message); }
   }
 
+  function exportOrdersCSV(){
+    if(!lastOrders.length){ showToast('Aucune commande à exporter.'); return; }
+    const isVendor = currentUser && currentUser.role === 'vendor';
+    const headers = ['Commande', 'Statut', 'Client', 'Telephone', 'Wilaya', 'Adresse', 'Articles', 'Total (DA)'];
+    const rows = lastOrders.map(o => [
+      '#' + o.id,
+      STATUS_LABELS[o.status] || o.status,
+      o.customer_name,
+      o.phone,
+      o.wilaya,
+      (o.address || '').replace(/\n/g, ' '),
+      o.items.map(it=>`${it.quantity}x ${it.title}`).join(' | '),
+      isVendor ? o.vendor_subtotal : o.total,
+    ]);
+    const escape = (v) => `"${String(v).replace(/"/g,'""')}"`;
+    const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(escape).join(';')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `commandes-souqdz-${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   loadStats();
+  loadOrders(); // pour que le badge de notification s'affiche dès l'arrivée sur le tableau de bord
 </script>
 </body>
 </html>
