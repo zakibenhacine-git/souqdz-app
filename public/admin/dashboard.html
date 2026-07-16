@@ -48,25 +48,26 @@
     margin-left:6px; vertical-align:middle;
   }
 
-  .kanban-board{ display:flex; gap:16px; overflow-x:auto; padding-bottom:12px; align-items:flex-start; }
-  .kanban-col{ background:var(--sand-deep); border-radius:14px; padding:14px; width:280px; flex-shrink:0; }
-  .kanban-col-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 4px; }
-  .kanban-col-head h3{ font-size:13.5px; font-weight:700; }
-  .kanban-count{ background:var(--cream); border-radius:10px; padding:2px 9px; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
-  .kanban-cards{ display:flex; flex-direction:column; gap:10px; min-height:40px; }
-  .kanban-card{ background:var(--cream); border:1px solid var(--line); border-radius:12px; padding:14px; }
-  .kanban-card .k-id{ font-family:'Space Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; }
-  .kanban-card .k-name{ font-size:13.5px; font-weight:700; margin-bottom:2px; }
-  .kanban-card .k-meta{ font-size:12px; color:var(--ink-soft); margin-bottom:8px; line-height:1.5; }
-  .kanban-card .k-total{ font-family:'Space Mono',monospace; font-weight:700; color:var(--rust); font-size:14px; margin-bottom:10px; }
-  .kanban-card .k-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .kanban-board{ display:flex; gap:10px; overflow-x:auto; padding-bottom:12px; align-items:flex-start; }
+  .kanban-col{ background:var(--sand-deep); border-radius:12px; padding:10px; width:210px; flex-shrink:0; }
+  .kanban-col-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:0 3px; }
+  .kanban-col-head h3{ font-size:12px; font-weight:700; }
+  .kanban-count{ background:var(--cream); border-radius:8px; padding:1px 7px; font-size:10.5px; font-weight:700; color:var(--ink-soft); }
+  .kanban-cards{ display:flex; flex-direction:column; gap:8px; min-height:30px; }
+  .kanban-card{ background:var(--cream); border:1px solid var(--line); border-radius:10px; padding:10px; position:relative; }
+  .kanban-card .k-check{ position:absolute; top:8px; right:8px; width:15px; height:15px; }
+  .kanban-card .k-id{ font-family:'Space Mono',monospace; font-size:10px; color:var(--ink-soft); margin-bottom:2px; }
+  .kanban-card .k-name{ font-size:12px; font-weight:700; margin-bottom:2px; padding-right:18px; }
+  .kanban-card .k-meta{ font-size:10.5px; color:var(--ink-soft); margin-bottom:6px; line-height:1.4; }
+  .kanban-card .k-total{ font-family:'Space Mono',monospace; font-weight:700; color:var(--rust); font-size:12px; margin-bottom:8px; }
+  .kanban-card .k-actions{ display:flex; gap:4px; flex-wrap:wrap; }
   .kanban-card .k-actions button, .kanban-card .k-actions a{
-    font-size:11px; font-weight:700; padding:6px 9px; border-radius:6px; text-decoration:none; text-align:center; flex:1;
+    font-size:9.5px; font-weight:700; padding:5px 6px; border-radius:5px; text-decoration:none; text-align:center; flex:1;
   }
   .k-btn-next{ background:var(--indigo); color:var(--cream); }
   .k-btn-cancel{ background:transparent; color:var(--rust); border:1px solid var(--rust); }
   .k-btn-label{ background:var(--sand); color:var(--ink); border:1px solid var(--line); }
-  .kanban-empty{ font-size:12px; color:var(--ink-soft); text-align:center; padding:16px 0; }
+  .kanban-empty{ font-size:11px; color:var(--ink-soft); text-align:center; padding:12px 0; }
   .tab-section{display:none;}
   .tab-section.active{display:block;}
   @media (max-width:900px){
@@ -647,8 +648,10 @@
     en_attente: 'En attente', confirmee: 'Confirmée', expediee: 'Expédiée',
     livree: 'Livrée', annulee: 'Annulée'
   };
-  const STATUS_ORDER = ['en_attente', 'confirmee', 'expediee', 'livree'];
+  const KANBAN_COLUMNS = ['en_attente', 'confirmee', 'livree', 'annulee'];
+  const NEXT_STATUS = { en_attente: 'confirmee', confirmee: 'livree' };
   let lastOrders = [];
+  let selectedOrderIds = new Set();
 
   async function loadOrders(){
     const board = document.getElementById('kanbanBoard');
@@ -660,27 +663,34 @@
     }catch(e){ board.innerHTML = '<p style="color:var(--ink-soft);">Erreur de chargement.</p>'; }
   }
 
+  function toggleOrderSelect(id, checked){
+    if(checked) selectedOrderIds.add(id); else selectedOrderIds.delete(id);
+  }
+
   function renderKanban(orders){
     const board = document.getElementById('kanbanBoard');
     const isVendor = currentUser && currentUser.role === 'vendor';
-    board.innerHTML = STATUS_ORDER.concat(['annulee']).map(status => {
+    board.innerHTML = KANBAN_COLUMNS.map(status => {
       const colOrders = orders.filter(o => o.status === status);
       const cards = colOrders.map(o => {
         const total = fmt(isVendor ? o.vendor_subtotal : o.total);
         const items = o.items.map(it=>`${it.quantity}×${it.title}`).join(', ');
-        const nextIndex = STATUS_ORDER.indexOf(status) + 1;
-        const nextStatus = STATUS_ORDER[nextIndex];
-        let actions = `<a href="/admin/label.html?id=${o.id}" target="_blank" class="k-btn-label">🖨️ Étiquette</a>`;
+        const nextStatus = NEXT_STATUS[status];
+        const checkbox = status === 'confirmee'
+          ? `<input type="checkbox" class="k-check" ${selectedOrderIds.has(o.id)?'checked':''} onchange="toggleOrderSelect(${o.id}, this.checked)">`
+          : '';
+        let actions = `<a href="/admin/label.html?id=${o.id}" target="_blank" class="k-btn-label">🖨️</a>`;
         if(!isVendor){
           if(nextStatus){
             actions = `<button class="k-btn-next" onclick="updateStatus(${o.id}, '${nextStatus}')">${STATUS_LABELS[nextStatus]} →</button>` + actions;
           }
           if(status !== 'annulee' && status !== 'livree'){
-            actions += `<button class="k-btn-cancel" onclick="updateStatus(${o.id}, 'annulee')">Annuler</button>`;
+            actions += `<button class="k-btn-cancel" onclick="updateStatus(${o.id}, 'annulee')">✕</button>`;
           }
         }
         return `
           <div class="kanban-card">
+            ${checkbox}
             <div class="k-id">#${o.id}</div>
             <div class="k-name">${o.customer_name}</div>
             <div class="k-meta">${o.phone} · ${o.wilaya}<br>${items}</div>
@@ -716,10 +726,14 @@
   }
 
   function exportOrdersCSV(){
-    if(!lastOrders.length){ showToast('Aucune commande à exporter.'); return; }
+    const confirmedOrders = lastOrders.filter(o => o.status === 'confirmee');
+    const toExport = selectedOrderIds.size > 0
+      ? confirmedOrders.filter(o => selectedOrderIds.has(o.id))
+      : confirmedOrders;
+    if(!toExport.length){ showToast('Aucune commande confirmée à exporter.'); return; }
     const isVendor = currentUser && currentUser.role === 'vendor';
     const headers = ['Commande', 'Statut', 'Client', 'Telephone', 'Wilaya', 'Adresse', 'Articles', 'Total (DA)'];
-    const rows = lastOrders.map(o => [
+    const rows = toExport.map(o => [
       '#' + o.id,
       STATUS_LABELS[o.status] || o.status,
       o.customer_name,
@@ -736,7 +750,7 @@
     const a = document.createElement('a');
     const dateStr = new Date().toISOString().slice(0,10);
     a.href = url;
-    a.download = `commandes-souqdz-${dateStr}.csv`;
+    a.download = `commandes-confirmees-souqdz-${dateStr}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
