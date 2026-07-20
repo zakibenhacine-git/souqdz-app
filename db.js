@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sku TEXT,
   brand TEXT NOT NULL,
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   order_id INTEGER NOT NULL,
   product_id INTEGER,
+  sku TEXT,
   title TEXT NOT NULL,
   price INTEGER NOT NULL,
   quantity INTEGER NOT NULL,
@@ -78,6 +80,15 @@ CREATE TABLE IF NOT EXISTS coupons (
 const productColumns = db.prepare("PRAGMA table_info(products)").all().map(c => c.name);
 if (!productColumns.includes('subcategory')) {
   db.exec("ALTER TABLE products ADD COLUMN subcategory TEXT DEFAULT ''");
+}
+if (!productColumns.includes('sku')) {
+  db.exec('ALTER TABLE products ADD COLUMN sku TEXT');
+}
+
+// ---- Migration : ajouter le SKU aux articles de commande existants ----
+const orderItemColumns = db.prepare("PRAGMA table_info(order_items)").all().map(c => c.name);
+if (!orderItemColumns.includes('sku')) {
+  db.exec('ALTER TABLE order_items ADD COLUMN sku TEXT');
 }
 
 // ---- Migration : ajouter les colonnes de remise aux commandes existantes ----

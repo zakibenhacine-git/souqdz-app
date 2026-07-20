@@ -35,13 +35,13 @@ router.get('/:id', (req, res) => {
 
 // ---- Admin : créer un produit ----
 router.post('/', requireAdmin, (req, res) => {
-  const { brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock } = req.body || {};
+  const { sku, brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock } = req.body || {};
   if (!brand || !title || !price || !category || !image_seed) {
     return res.status(400).json({ error: 'Champs requis manquants (marque, titre, prix, catégorie, image).' });
   }
-  const info = db.prepare(`INSERT INTO products (brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(brand, title, description || '', price, old_price || null, category, subcategory || '', image_seed, badge || '', stock ?? 100);
+  const info = db.prepare(`INSERT INTO products (sku, brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(sku || null, brand, title, description || '', price, old_price || null, category, subcategory || '', image_seed, badge || '', stock ?? 100);
   const product = db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json({ product });
 });
@@ -50,9 +50,10 @@ router.post('/', requireAdmin, (req, res) => {
 router.put('/:id', requireAdmin, (req, res) => {
   const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Produit introuvable.' });
-  const { brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock } = req.body || {};
-  db.prepare(`UPDATE products SET brand=?, title=?, description=?, price=?, old_price=?, category=?, subcategory=?, image_seed=?, badge=?, stock=? WHERE id=?`)
+  const { sku, brand, title, description, price, old_price, category, subcategory, image_seed, badge, stock } = req.body || {};
+  db.prepare(`UPDATE products SET sku=?, brand=?, title=?, description=?, price=?, old_price=?, category=?, subcategory=?, image_seed=?, badge=?, stock=? WHERE id=?`)
     .run(
+      sku !== undefined ? sku : existing.sku,
       brand ?? existing.brand,
       title ?? existing.title,
       description ?? existing.description,

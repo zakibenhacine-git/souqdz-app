@@ -24,7 +24,7 @@ router.post('/', (req, res) => {
     if (!product) continue;
     const qty = Math.max(1, parseInt(item.qty, 10) || 1);
     subtotal += product.price * qty;
-    resolvedItems.push({ product_id: product.id, title: product.title, price: product.price, quantity: qty });
+    resolvedItems.push({ product_id: product.id, sku: product.sku || '', title: product.title, price: product.price, quantity: qty });
   }
   if (resolvedItems.length === 0) {
     return res.status(400).json({ error: 'Aucun article valide dans le panier.' });
@@ -51,8 +51,8 @@ router.post('/', (req, res) => {
     .run(userId, customer_name, phone, wilaya, address, subtotal, discountAmount, appliedCode, total);
 
   const orderId = info.lastInsertRowid;
-  const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, title, price, quantity) VALUES (?, ?, ?, ?, ?)');
-  for (const it of resolvedItems) itemStmt.run(orderId, it.product_id, it.title, it.price, it.quantity);
+  const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, sku, title, price, quantity) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const it of resolvedItems) itemStmt.run(orderId, it.product_id, it.sku, it.title, it.price, it.quantity);
 
   res.status(201).json({ order: { id: Number(orderId), subtotal, discount_amount: discountAmount, coupon_code: appliedCode, total, status: 'en_attente' } });
 });

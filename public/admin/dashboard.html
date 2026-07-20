@@ -111,8 +111,8 @@
       </div>
       <div style="overflow-x:auto;">
         <table>
-          <thead><tr><th></th><th>Produit</th><th>Marque</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
-          <tbody id="productsBody"><tr><td colspan="7">Chargement…</td></tr></tbody>
+          <thead><tr><th></th><th>SKU</th><th>Produit</th><th>Marque</th><th>Catégorie</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
+          <tbody id="productsBody"><tr><td colspan="8">Chargement…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -148,8 +148,11 @@
         <p style="color:var(--ink-soft); font-size:13.5px;">Suivez vos commandes de l'arrivée à la livraison.</p>
         <button class="btn btn-primary" onclick="exportOrdersCSV()">📥 Télécharger le fichier de livraison</button>
       </div>
-      <div class="kanban-board" id="kanbanBoard">
-        <p style="color:var(--ink-soft);">Chargement…</p>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th></th><th>SKU</th><th>Date</th><th>Client</th><th>Ville</th><th>Prix</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="ordersBody"><tr><td colspan="8">Chargement…</td></tr></tbody>
+        </table>
       </div>
     </section>
   </main>
@@ -162,17 +165,19 @@
     <form id="productForm">
       <input type="hidden" id="p_id">
       <div class="field-row">
+        <div class="field"><label>Référence (SKU)</label><input type="text" id="p_sku" placeholder="ex: MAN-NOIR-01"></div>
         <div class="field"><label>Marque</label><input type="text" id="p_brand" required></div>
-        <div class="field"><label>Catégorie</label>
-          <select id="p_category" required>
-            <option value="femme">Femme</option>
-            <option value="homme">Homme</option>
-            <option value="enfant">Enfants</option>
-            <option value="chaussures">Chaussures</option>
-            <option value="beaute">Beauté</option>
-            <option value="maison">Maison</option>
-          </select>
-        </div>
+      </div>
+      <div class="field">
+        <label>Catégorie</label>
+        <select id="p_category" required>
+          <option value="femme">Femme</option>
+          <option value="homme">Homme</option>
+          <option value="enfant">Enfants</option>
+          <option value="chaussures">Chaussures</option>
+          <option value="beaute">Beauté</option>
+          <option value="maison">Maison</option>
+        </select>
       </div>
       <div class="field">
         <label>Sous-catégorie (optionnel)</label>
@@ -517,6 +522,7 @@
       body.innerHTML = products.map(p => `
         <tr>
           <td><a href="/product.html?id=${p.id}" target="_blank" title="Voir la fiche produit"><img src="${imageUrl(p.image_seed, 100, 100)}" alt=""></a></td>
+          <td class="mono">${p.sku || '—'}</td>
           <td><a href="/product.html?id=${p.id}" target="_blank" style="color:inherit; text-decoration:underline;" title="Voir la fiche produit">${p.title}</a></td>
           <td>${p.brand}</td>
           <td>${p.category}</td>
@@ -527,7 +533,7 @@
             <button class="btn-del" onclick="deleteProduct(${p.id})">Supprimer</button>
           </td>
         </tr>`).join('');
-    }catch(e){ body.innerHTML = '<tr><td colspan="7">Erreur de chargement.</td></tr>'; }
+    }catch(e){ body.innerHTML = '<tr><td colspan="8">Erreur de chargement.</td></tr>'; }
   }
 
   const SUBCATEGORIES = {
@@ -556,6 +562,7 @@
     const p = id ? allProducts.find(x=>x.id===id) : null;
     document.getElementById('modalTitle').textContent = p ? 'Modifier le produit' : 'Ajouter un produit';
     document.getElementById('p_id').value = p ? p.id : '';
+    document.getElementById('p_sku').value = p ? (p.sku || '') : '';
     document.getElementById('p_brand').value = p ? p.brand : '';
     document.getElementById('p_category').value = p ? p.category : 'femme';
     populateSubcategories(p ? p.category : 'femme', p ? (p.subcategory || '') : '');
@@ -609,6 +616,7 @@
 
       submitBtn.textContent = 'Enregistrement…';
       const payload = {
+        sku: document.getElementById('p_sku').value,
         brand: document.getElementById('p_brand').value,
         category: document.getElementById('p_category').value,
         subcategory: document.getElementById('p_subcategory').value,
@@ -643,71 +651,62 @@
     }catch(ex){ showToast(ex.message); }
   }
 
-  // ---- Commandes (tableau kanban) ----
+  // ---- Commandes (tableau simple) ----
   const STATUS_LABELS = {
     en_attente: 'En attente', confirmee: 'Confirmée', expediee: 'Expédiée',
     livree: 'Livrée', annulee: 'Annulée'
   };
-  const KANBAN_COLUMNS = ['en_attente', 'confirmee', 'livree', 'annulee'];
-  const NEXT_STATUS = { en_attente: 'confirmee', confirmee: 'livree' };
   let lastOrders = [];
   let selectedOrderIds = new Set();
 
   async function loadOrders(){
-    const board = document.getElementById('kanbanBoard');
+    const body = document.getElementById('ordersBody');
     try{
       const { orders } = await api('/orders');
       lastOrders = orders;
-      renderKanban(orders);
+      renderOrdersTable(orders);
       updateOrdersBadge(orders);
-    }catch(e){ board.innerHTML = '<p style="color:var(--ink-soft);">Erreur de chargement.</p>'; }
+    }catch(e){ body.innerHTML = '<tr><td colspan="8">Erreur de chargement.</td></tr>'; }
   }
 
   function toggleOrderSelect(id, checked){
     if(checked) selectedOrderIds.add(id); else selectedOrderIds.delete(id);
   }
 
-  function renderKanban(orders){
-    const board = document.getElementById('kanbanBoard');
-    const isVendor = currentUser && currentUser.role === 'vendor';
-    board.innerHTML = KANBAN_COLUMNS.map(status => {
-      const colOrders = orders.filter(o => o.status === status);
-      const cards = colOrders.map(o => {
-        const total = fmt(isVendor ? o.vendor_subtotal : o.total);
-        const items = o.items.map(it=>`${it.quantity}×${it.title}`).join(', ');
-        const nextStatus = NEXT_STATUS[status];
-        const checkbox = status === 'confirmee'
-          ? `<input type="checkbox" class="k-check" ${selectedOrderIds.has(o.id)?'checked':''} onchange="toggleOrderSelect(${o.id}, this.checked)">`
-          : '';
-        let actions = `<a href="/admin/label.html?id=${o.id}" target="_blank" class="k-btn-label">🖨️</a>`;
-        if(!isVendor){
-          if(nextStatus){
-            actions = `<button class="k-btn-next" onclick="updateStatus(${o.id}, '${nextStatus}')">${STATUS_LABELS[nextStatus]} →</button>` + actions;
-          }
-          if(status !== 'annulee' && status !== 'livree'){
-            actions += `<button class="k-btn-cancel" onclick="updateStatus(${o.id}, 'annulee')">✕</button>`;
-          }
-        }
-        return `
-          <div class="kanban-card">
-            ${checkbox}
-            <div class="k-id">#${o.id}</div>
-            <div class="k-name">${o.customer_name}</div>
-            <div class="k-meta">${o.phone} · ${o.wilaya}<br>${items}</div>
-            <div class="k-total">${total}</div>
-            <div class="k-actions">${actions}</div>
-          </div>`;
-      }).join('') || '<div class="kanban-empty">Aucune commande ici</div>';
+  function skuList(o){
+    const skus = o.items.map(it => it.sku).filter(Boolean);
+    return skus.length ? skus.join(', ') : '—';
+  }
 
+  function renderOrdersTable(orders){
+    const body = document.getElementById('ordersBody');
+    const isVendor = currentUser && currentUser.role === 'vendor';
+    body.innerHTML = orders.length ? orders.map(o => {
+      const total = fmt(isVendor ? o.vendor_subtotal : o.total);
+      const dateStr = new Date(o.created_at).toLocaleDateString('fr-FR');
+      const checkbox = o.status === 'confirmee'
+        ? `<input type="checkbox" ${selectedOrderIds.has(o.id)?'checked':''} onchange="toggleOrderSelect(${o.id}, this.checked)">`
+        : '';
       return `
-        <div class="kanban-col">
-          <div class="kanban-col-head">
-            <h3>${STATUS_LABELS[status]}</h3>
-            <span class="kanban-count">${colOrders.length}</span>
-          </div>
-          <div class="kanban-cards">${cards}</div>
-        </div>`;
-    }).join('');
+        <tr>
+          <td>${checkbox}</td>
+          <td class="mono">${skuList(o)}</td>
+          <td>${dateStr}</td>
+          <td>${o.customer_name}</td>
+          <td>${o.wilaya}</td>
+          <td class="mono">${total}</td>
+          <td>
+            ${isVendor
+              ? `<span class="status-pill status-${o.status}">${STATUS_LABELS[o.status] || o.status}</span>`
+              : `<select class="status-select" onchange="updateStatus(${o.id}, this.value)">
+                  ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}
+                </select>`}
+          </td>
+          <td>
+            <a href="/admin/label.html?id=${o.id}" target="_blank" class="btn-edit" style="display:inline-block; text-decoration:none;">🖨️</a>
+          </td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="8">Aucune commande pour le moment.</td></tr>';
   }
 
   function updateOrdersBadge(orders){
@@ -732,15 +731,12 @@
       : confirmedOrders;
     if(!toExport.length){ showToast('Aucune commande confirmée à exporter.'); return; }
     const isVendor = currentUser && currentUser.role === 'vendor';
-    const headers = ['Commande', 'Statut', 'Client', 'Telephone', 'Wilaya', 'Adresse', 'Articles', 'Total (DA)'];
+    const headers = ['SKU', 'Date', 'Client', 'Ville', 'Prix (DA)'];
     const rows = toExport.map(o => [
-      '#' + o.id,
-      STATUS_LABELS[o.status] || o.status,
+      skuList(o),
+      new Date(o.created_at).toLocaleDateString('fr-FR'),
       o.customer_name,
-      o.phone,
       o.wilaya,
-      (o.address || '').replace(/\n/g, ' '),
-      o.items.map(it=>`${it.quantity}x ${it.title}`).join(' | '),
       isVendor ? o.vendor_subtotal : o.total,
     ]);
     const escape = (v) => `"${String(v).replace(/"/g,'""')}"`;
