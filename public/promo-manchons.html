@@ -20,10 +20,23 @@
   .lp-hero h1 em{ font-style:italic; color:var(--rust); }
   .lp-hero p.sub{ color:var(--ink-soft); font-size:16px; margin-bottom:22px; }
   .lp-image{
-    max-width:420px; margin:0 auto 20px; border-radius:18px; overflow:hidden;
+    max-width:420px; margin:0 auto 14px; border-radius:18px; overflow:hidden;
     aspect-ratio:1/1; background:var(--sand-deep); box-shadow:0 20px 40px -18px rgba(34,28,20,.35);
+    position:relative;
   }
   .lp-image img{ width:100%; height:100%; object-fit:cover; }
+  .lp-pack-badge{
+    position:absolute; top:14px; left:14px; background:var(--indigo); color:var(--cream);
+    font-family:'Space Mono',monospace; font-weight:700; font-size:13px; padding:8px 14px; border-radius:10px;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.3);
+  }
+  .lp-swatches{ display:flex; justify-content:center; gap:12px; margin-bottom:20px; }
+  .lp-swatch{
+    width:64px; height:64px; border-radius:12px; overflow:hidden; cursor:pointer;
+    border:3px solid transparent; transition:.15s; opacity:.65;
+  }
+  .lp-swatch img{ width:100%; height:100%; object-fit:cover; }
+  .lp-swatch.active{ border-color:var(--rust); opacity:1; transform:translateY(-2px); }
   .lp-price-box{
     display:inline-flex; align-items:baseline; gap:10px; background:var(--cream);
     border:1.5px solid var(--line); border-radius:12px; padding:14px 22px; margin-bottom:20px;
@@ -85,7 +98,17 @@
   <p class="sub">Protégez votre peau du soleil toute la journée, sans renoncer au confort — idéal en conduite, moto, sport ou jardinage.</p>
 
   <div class="lp-image">
-    <img id="prodImg" src="" alt="Manchons de protection solaire SOUQDZ">
+    <span class="lp-pack-badge">📦 Pack de 3</span>
+    <img id="prodImg" src="/img/manchons-noir.jpg" alt="Manchons de protection solaire SOUQDZ">
+  </div>
+
+  <div class="lp-swatches">
+    <div class="lp-swatch active" onclick="selectPhoto(this, '/img/manchons-noir.jpg')">
+      <img src="/img/manchons-noir.jpg" alt="Manchons noirs">
+    </div>
+    <div class="lp-swatch" onclick="selectPhoto(this, '/img/manchons-blanc.jpg')">
+      <img src="/img/manchons-blanc.jpg" alt="Manchons blancs">
+    </div>
   </div>
 
   <div class="lp-price-box">
@@ -220,6 +243,12 @@
     return `https://picsum.photos/seed/${value}/${w}/${h}`;
   }
 
+  function selectPhoto(el, src){
+    document.getElementById('prodImg').src = src;
+    document.querySelectorAll('.lp-swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+  }
+
   function changeQty(delta){
     qty = Math.max(1, qty + delta);
     document.getElementById('qtyVal').textContent = qty;
@@ -232,10 +261,10 @@
       const data = await res.json();
       product = data.product;
       document.getElementById('prodTitle').innerHTML = product.title.replace(/solaire/i, '<em>solaire</em>');
-      document.getElementById('prodImg').src = imageUrl(product.image_seed, 500, 500);
       document.getElementById('prodPrice').textContent = fmt(product.price);
       document.getElementById('qtyTotal').textContent = fmt(product.price);
       document.title = product.title + ' | SOUQDZ.CLICK';
+      // On garde les vraies photos (noir/blanc) plutôt que l'image générique de la fiche produit
     }catch(e){
       document.getElementById('prodTitle').textContent = 'Manchons de protection solaire';
     }
